@@ -4,4 +4,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -pthread -pedantic -Wall -Wextra -
 
 project(DSPatchables)
 
+include_directories(${CMAKE_SOURCE_DIR}/include)
+link_directories(${CMAKE_SOURCE_DIR}/link)
+
 add_subdirectory(DspOscillator)

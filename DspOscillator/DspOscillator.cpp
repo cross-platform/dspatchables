@@ -1,6 +1,6 @@
 /************************************************************************
 DSPatch - Cross-Platform, Object-Oriented, Flow-Based Programming Library
-Copyright (c) 2012-2014 Marcus Tomlinson
+Copyright (c) 2012-2015 Marcus Tomlinson
 
 This file is part of DSPatch.
 
@@ -30,11 +30,6 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 static const float TWOPI = 6.283185307179586476925286766559f;
 
-std::string const DspOscillator::pBufferSize = "bufferSize";
-std::string const DspOscillator::pSampleRate = "sampleRate";
-std::string const DspOscillator::pAmplitude = "amplitude";
-std::string const DspOscillator::pFrequency = "frequency";
-
 //=================================================================================================
 
 DspOscillator::DspOscillator(float startFreq, float startAmpl)
@@ -46,10 +41,10 @@ DspOscillator::DspOscillator(float startFreq, float startAmpl)
 
     AddOutput_();
 
-    AddParameter_(pBufferSize, DspParameter(DspParameter::Int, 256));
-    AddParameter_(pSampleRate, DspParameter(DspParameter::Int, 44100));
-    AddParameter_(pAmplitude, DspParameter(DspParameter::Float, startAmpl));
-    AddParameter_(pFrequency, DspParameter(DspParameter::Float, startFreq));
+    pBufferSize = AddParameter_("bufferSize", DspParameter(DspParameter::Int, 256));
+    pSampleRate = AddParameter_("sampleRate", DspParameter(DspParameter::Int, 44100));
+    pAmplitude = AddParameter_("amplitude", DspParameter(DspParameter::Float, startAmpl));
+    pFrequency = AddParameter_("frequency", DspParameter(DspParameter::Float, startFreq));
 
     _BuildLookup();
 }
@@ -161,7 +156,7 @@ void DspOscillator::Process_(DspSignalBus& inputs, DspSignalBus& outputs)
 
     if (_signalLookup.size() != 0)
     {
-        for (unsigned long i = 0; i < _signal.size(); i++)
+        for (size_t i = 0; i < _signal.size(); i++)
         {
             if (_lastPos >= _lookupLength)
             {
@@ -178,24 +173,24 @@ void DspOscillator::Process_(DspSignalBus& inputs, DspSignalBus& outputs)
 
 //-------------------------------------------------------------------------------------------------
 
-bool DspOscillator::ParameterUpdating_(std::string const& name, DspParameter const& param)
+bool DspOscillator::ParameterUpdating_(int index, DspParameter const& param)
 {
-    if (name == pBufferSize)
+    if (index == pBufferSize)
     {
         SetBufferSize(*param.GetInt());
         return true;
     }
-    else if (name == pSampleRate)
+    else if (index == pSampleRate)
     {
         SetSampleRate(*param.GetInt());
         return true;
     }
-    else if (name == pAmplitude)
+    else if (index == pAmplitude)
     {
         SetAmpl(*param.GetFloat());
         return true;
     }
-    else if (name == pFrequency)
+    else if (index == pFrequency)
     {
         SetFreq(*param.GetFloat());
         return true;
@@ -208,20 +203,20 @@ bool DspOscillator::ParameterUpdating_(std::string const& name, DspParameter con
 
 void DspOscillator::_BuildLookup()
 {
-    float posFrac = (float)_lastPos / (float)_lookupLength;
+    float posFrac = _lookupLength <= 0 ? 0 : (float)_lastPos / (float)_lookupLength;
     float angleInc = TWOPI * GetFreq() / GetSampleRate();
 
-    _lookupLength = (unsigned long)((float)GetSampleRate() / GetFreq());
+    _lookupLength = (int)((float)GetSampleRate() / GetFreq());
 
     _signal.resize(GetBufferSize());
     _signalLookup.resize(_lookupLength);
 
-    for (unsigned long i = 0; i < _lookupLength; i++)
+    for (int i = 0; i < _lookupLength; i++)
     {
         _signalLookup[i] = sin(angleInc * i) * GetAmpl();
     }
 
-    _lastPos = (unsigned long)(posFrac * (float)_lookupLength + 0.5f);  // calculate new position (round up)
+    _lastPos = (int)(posFrac * (float)_lookupLength + 0.5f);  // calculate new position (round up)
 }
 
 //=================================================================================================
