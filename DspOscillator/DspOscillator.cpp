@@ -92,7 +92,7 @@ void DspOscillator::SetAmpl(float ampl)
 
 void DspOscillator::SetFreq(float freq)
 {
-    SetParameter_(pFrequency, DspParameter(DspParameter::Float, freq));
+    SetParameter_(pFrequency, DspParameter(DspParameter::Float, freq == 0 ? 1 : freq));
 
     _processMutex.Lock();
     _BuildLookup();

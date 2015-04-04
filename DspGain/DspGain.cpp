@@ -31,7 +31,7 @@ DspGain::DspGain()
     AddInput_();
     AddOutput_();
 
-    pGain = AddParameter_("gain", DspParameter(DspParameter::Float, 1, std::make_pair(0, 2)));
+    pGain = AddParameter_("gain", DspParameter(DspParameter::Float, 1, std::make_pair(0, 10)));
 }
 
 //-------------------------------------------------------------------------------------------------
