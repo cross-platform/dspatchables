@@ -48,16 +48,16 @@ DspAudioDevice::DspAudioDevice()
     , _gotWaitReady(false)
     , _gotSyncReady(true)
 {
-    _outputChannels.resize(20);
-    for (int i = 0; i < 20; i++)
+    _outputChannels.resize(8);
+    for (int i = 0; i < 8; i++)
     {
         AddInput_();
     }
 
     AddInput_("Sample Rate");
 
-    _inputChannels.resize(20);
-    for (int i = 0; i < 20; i++)
+    _inputChannels.resize(8);
+    for (int i = 0; i < 8; i++)
     {
         AddOutput_();
     }
