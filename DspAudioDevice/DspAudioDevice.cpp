@@ -358,6 +358,11 @@ void DspAudioDevice::_StartStream()
                                      &options);
 
     _rtAudio->audioStream.startStream();
+    
+    while (!_rtAudio->audioStream.isStreamOpen())
+    {
+        DspThread::MsSleep(10);
+    }
 
     _SetIsStreaming(true);
 }
