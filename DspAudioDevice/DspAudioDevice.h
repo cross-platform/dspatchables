@@ -22,84 +22,88 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 ************************************************************************/
 
-#ifndef DSPOSCILLATOR_H
-#define DSPOSCILLATOR_H
+#ifndef DSPAUDIODEVICE_H
+#define DSPAUDIODEVICE_H
 
 #include <DSPatch.h>
 
+struct RtAudioMembers;
+
 //=================================================================================================
 
-class DspOscillator : public DspComponent
+class DspAudioDevice : public DspComponent
 {
 public:
-    int pBufferSize;  // Int
-    int pSampleRate;  // Int
-    int pAmplitude;   // Float
-    int pFrequency;   // Float
+    int pDeviceList;   // List
+    int pIsStreaming;  // Bool
+    int pBufferSize;   // Int
+    int pSampleRate;   // Int
 
-    DspOscillator(float startFreq = 1000.0, float startAmpl = 1.0);
-    ~DspOscillator();
+    DspAudioDevice();
+    ~DspAudioDevice();
+
+    bool SetDevice(int deviceIndex);
+
+    std::string GetDeviceName(int deviceIndex) const;
+    int GetDeviceInputCount(int deviceIndex) const;
+    int GetDeviceOutputCount(int deviceIndex) const;
+    int GetCurrentDevice() const;
+    int GetDeviceCount() const;
 
     void SetBufferSize(int bufferSize);
     void SetSampleRate(int sampleRate);
-    void SetAmpl(float ampl);
-    void SetFreq(float freq);
 
+    bool IsStreaming() const;
     int GetBufferSize() const;
     int GetSampleRate() const;
-    float GetAmpl() const;
-    float GetFreq() const;
 
 protected:
     virtual void Process_(DspSignalBus& inputs, DspSignalBus& outputs);
     virtual bool ParameterUpdating_(int index, DspParameter const& param);
 
 private:
-    std::vector<float> _signalLookup;
-    std::vector<float> _signal;
+    std::vector< std::vector<float> > _outputChannels;
+    std::vector< std::vector<float> > _inputChannels;
 
-    int _lastPos;
-    int _lookupLength;
+    RtAudioMembers* _rtAudio;
 
-    DspMutex _processMutex;
+    DspMutex _buffersMutex;
+    DspMutex _syncMutex;
+    DspWaitCondition _waitCondt;
+    DspWaitCondition _syncCondt;
+    bool _gotWaitReady;
+    bool _gotSyncReady;
 
-    void _BuildLookup();
+    void _SetIsStreaming(bool isStreaming);
+
+    void _WaitForBuffer();
+    void _SyncBuffer();
+
+    void _StopStream();
+    void _StartStream();
+
+    static int _StaticCallback(void* outputBuffer,
+                               void* inputBuffer,
+                               unsigned int nBufferFrames,
+                               double streamTime,
+                               unsigned int status,
+                               void* userData);
+
+    int _DynamicCallback(void* inputBuffer, void* outputBuffer);
 };
 
 //=================================================================================================
 
-class DspOscillatorPlugin : public DspPlugin
+class DspAudioDevicePlugin : public DspPlugin
 {
-    std::map<std::string, DspParameter> GetCreateParams() const
+    DspComponent* Create(std::map<std::string, DspParameter>&) const
     {
-        std::map<std::string, DspParameter> params;
-        params["startFreq"] = DspParameter(DspParameter::Float);
-        params["startAmpl"] = DspParameter(DspParameter::Float, 1.0f, std::make_pair(0.0f, 1.0f));
-        return params;
-    }
-
-    DspComponent* Create(std::map<std::string, DspParameter>& params) const
-    {
-        float const* startFreq = params["startFreq"].GetFloat();
-        float const* startAmpl = params["startAmpl"].GetFloat();
-
-        if (startFreq && startAmpl)
-        {
-            return new DspOscillator(*startFreq, *startAmpl);
-        }
-        else if (startFreq && !startAmpl)
-        {
-            return new DspOscillator(*startFreq);
-        }
-        else
-        {
-            return new DspOscillator();
-        }
+        return new DspAudioDevice();
     }
 };
 
-EXPORT_DSPPLUGIN(DspOscillatorPlugin)
+EXPORT_DSPPLUGIN(DspAudioDevicePlugin)
 
 //=================================================================================================
 
-#endif /* DSPOSCILLATOR_H */
+#endif  // DSPAUDIODEVICE_H

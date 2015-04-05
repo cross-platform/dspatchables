@@ -1,4 +1,4 @@
-project(DspOscillator)
+project(DspAdder)
 
 file(GLOB srcs *.cpp)
 file(GLOB hdrs *.h)
