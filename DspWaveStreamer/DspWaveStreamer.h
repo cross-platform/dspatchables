@@ -90,6 +90,11 @@ private:
 
 class DspWaveStreamerPlugin : public DspPlugin
 {
+    std::map<std::string, DspParameter> GetCreateParams() const
+    {
+        return std::map<std::string, DspParameter>();
+    }
+
     DspComponent* Create(std::map<std::string, DspParameter>&) const
     {
         return new DspWaveStreamer();
