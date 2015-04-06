@@ -1,8 +1,8 @@
 /************************************************************************
-DSPatch - Cross-Platform, Object-Oriented, Flow-Based Programming Library
-Copyright (c) 2012-2015 Marcus Tomlinson
+DSPatchables - DSPatch Component Repository
+Copyright (c) 2014-2015 Marcus Tomlinson
 
-This file is part of DSPatch.
+This file is part of DSPatchables.
 
 GNU Lesser General Public License Usage
 This file may be used under the terms of the GNU Lesser General Public
