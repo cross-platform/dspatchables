@@ -1,0 +1,5 @@
+add_subdirectory(DspAdder)
+add_subdirectory(DspAudioDevice)
+add_subdirectory(DspGain)
+add_subdirectory(DspOscillator)
+add_subdirectory(DspWaveStreamer)
