@@ -8,9 +8,5 @@ project(DSPatchables)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/DSPatch/include)
 
-if(APPLE)
-  execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/link/update_install_name.sh)
-endif(APPLE)
-
 add_subdirectory(DSPatch)
 add_subdirectory(DSPatchables)
