@@ -1,6 +1,16 @@
 # DSPatchables
 DSPatch Component Repository
 
+```
+git clone https://github.com/MarcusTomlinson/DSPatchables.git
+cd DSPatchables
+git submodule update --init --recursive
+mkdir build
+cd build
+cmake ..
+make
+```
+
 DSPatchables is a DSPatch component repository.
 
 *Related projects:*
