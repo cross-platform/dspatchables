@@ -1,6 +1,6 @@
 /************************************************************************
 DSPatchables - DSPatch Component Repository
-Copyright (c) 2014-2015 Marcus Tomlinson
+Copyright (c) 2014-2018 Marcus Tomlinson
 
 This file is part of DSPatchables.
 
@@ -22,49 +22,36 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 ************************************************************************/
 
-#ifndef DSPGAIN_H
-#define DSPGAIN_H
+#pragma once
 
 #include <DSPatch.h>
 
-//=================================================================================================
+namespace DSPatch
+{
+namespace DSPatchables
+{
 
-class DspGain : public DspComponent
+namespace internal
+{
+class Gain;
+}
+
+class Gain final : public Component
 {
 public:
-    int pGain;  // Float
+    Gain( float initGain );
 
-    DspGain();
-    ~DspGain();
-
-    void SetGain(float gain);
+    void SetGain( float gain );
     float GetGain() const;
 
 protected:
-    virtual void Process_(DspSignalBus& inputs, DspSignalBus& outputs);
-    virtual bool ParameterUpdating_(int index, DspParameter const& param);
+    virtual void Process_( SignalBus const& inputs, SignalBus& outputs ) override;
 
 private:
-    std::vector<float> _stream;
+    std::unique_ptr<internal::Gain> p;
 };
 
-//=================================================================================================
+EXPORT_PLUGIN( Gain, 0.5f )
 
-class DspGainPlugin : public DspPlugin
-{
-    std::map<std::string, DspParameter> GetCreateParams() const
-    {
-        return std::map<std::string, DspParameter>();
-    }
-
-    DspComponent* Create(std::map<std::string, DspParameter>&) const
-    {
-        return new DspGain();
-    }
-};
-
-EXPORT_DSPPLUGIN(DspGainPlugin)
-
-//=================================================================================================
-
-#endif  // DSPGAIN_H
+}  // namespace DSPatchables
+}  // namespace DSPatch
