@@ -10,5 +10,5 @@ project(DSPatchables)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/DSPatch/include)
 
+add_subdirectory(Components)
 add_subdirectory(DSPatch)
-add_subdirectory(DSPatchables)
