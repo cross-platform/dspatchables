@@ -27,6 +27,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #include <RtAudio.h>
 
 #include <algorithm>
+#include <string.h>
 
 const int c_sampleRate = 44100;
 const int c_bufferSize = 441;  // Process 10ms chunks of data @ 44100Hz
@@ -78,7 +79,7 @@ public:
     bool gotWaitReady = false;
     bool gotSyncReady = true;
 
-    int currentDeviceIndex = 0;
+    int currentDeviceIndex = -1;
     bool isStreaming = false;
     int bufferSize = c_bufferSize;
     int sampleRate = c_sampleRate;
