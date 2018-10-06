@@ -1,8 +1,8 @@
 # DSPatchables
-DSPatch component repository
+DSPatch Component Repository
 
-DSPatchables is a repository for DSPatch component plugins.
+DSPatchables is a DSPatch component repository.
 
-DSPatch (https://github.com/MarcusTomlinson/DSPatch) is a powerful C++ flow-based programming library that allows you to create and route high performance data processing circuits.
+DSPatch (https://github.com/MarcusTomlinson/DSPatch) is a powerful C++ flow-based programming framework.
 
-DSPatcher (https://github.com/MarcusTomlinson/DSPatcher) is a cross-platform graphical patching tool for creating complex DSPatch circuits via a simple, intuitive user interface.
+DSPatcher (https://github.com/MarcusTomlinson/DSPatcher) is a cross-platform graphical tool for testing DSPatch components.
