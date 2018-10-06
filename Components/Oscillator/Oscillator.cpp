@@ -56,8 +56,8 @@ public:
 
     int bufferSize = c_bufferSize;
     int sampleRate = c_sampleRate;
-    int amplitude;
-    int frequency;
+    float amplitude;
+    float frequency;
 
     int lastPos = 0;
     int lookupLength = 0;
