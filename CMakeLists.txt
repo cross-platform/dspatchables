@@ -1,16 +1,14 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.0)
+
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -pthread -pedantic -Wall -Wextra -Wnon-virtual-dtor")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-return-type-c-linkage -Wno-gnu-zero-variadic-macro-arguments -Wno-vla-extension")
 
 project(DSPatchables)
 
-include_directories(${CMAKE_SOURCE_DIR}/include)
-link_directories(${CMAKE_SOURCE_DIR}/link)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/DSPatch/include)
 
-if(APPLE)
-  execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/link/update_install_name.sh)
-endif(APPLE)
-
-add_subdirectory(DspAdder)
-add_subdirectory(DspAudioDevice)
-add_subdirectory(DspGain)
-add_subdirectory(DspOscillator)
-add_subdirectory(DspWaveStreamer)
+add_subdirectory(Components)
+add_subdirectory(DSPatch)
