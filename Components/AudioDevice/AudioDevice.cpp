@@ -56,8 +56,6 @@ public:
         }
     }
 
-    void SetIsStreaming( bool streaming );
-
     void WaitForBuffer();
     void SyncBuffer();
 
@@ -459,11 +457,6 @@ void AudioDevice::Process_( SignalBus const& inputs, SignalBus& outputs )
     p->waitCondt.notify_one();  // release sync
 }
 
-void DSPatchables::internal::AudioDevice::SetIsStreaming( bool streaming )
-{
-    isStreaming = streaming;
-}
-
 void DSPatchables::internal::AudioDevice::WaitForBuffer()
 {
     std::unique_lock<std::mutex> lock( buffersMutex );
@@ -483,7 +476,7 @@ void DSPatchables::internal::AudioDevice::SyncBuffer()
 
 void DSPatchables::internal::AudioDevice::StopStream()
 {
-    SetIsStreaming( false );
+    isStreaming = false;
 
     buffersMutex.lock();
     gotWaitReady = true;     // set release flag
@@ -492,6 +485,7 @@ void DSPatchables::internal::AudioDevice::StopStream()
 
     if ( audioStream.isStreamOpen() )
     {
+        std::lock_guard<std::mutex> lock( processMutex ); // wait for Process_() to exit
         audioStream.closeStream();
     }
 }
@@ -518,7 +512,7 @@ void DSPatchables::internal::AudioDevice::StartStream()
     audioStream.openStream( outParams, inParams, RTAUDIO_SINT16, sampleRate, (unsigned int*)&bufferSize, &StaticCallback, this,
                             &options );
 
-    SetIsStreaming( true );
+    isStreaming = true;
 
     audioStream.startStream();
 }
