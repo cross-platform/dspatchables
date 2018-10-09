@@ -268,10 +268,10 @@ bool AudioDevice::SetDevice( int deviceIndex )
 
 bool AudioDevice::SetDevice( bool isOutputDevice, std::vector<std::string> deviceNameHas, bool defaultIfNotFound )
 {
-    std::lock_guard<std::mutex> lock( p->processMutex );
+    std::lock_guard<std::mutex> processLock( p->processMutex );
 
     {
-        std::lock_guard<std::mutex> lock( p->availableMutex );
+        std::lock_guard<std::mutex> availableLock( p->availableMutex );
 
         if ( p->hasInputs == !isOutputDevice && p->nameHas == deviceNameHas && p->defaultIfNotFound == defaultIfNotFound )
         {
