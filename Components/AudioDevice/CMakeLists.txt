@@ -19,7 +19,7 @@ target_link_libraries(
     DSPatch
 )
 
-# Definition for RtAudio Windows, using direct sound
+# Definition for RtAudio Windows, using WASAPI
 if(WIN32)
     add_definitions(-D__WINDOWS_WASAPI__)
 

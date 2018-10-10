@@ -15,6 +15,6 @@ DSPatchables is a DSPatch component repository.
 
 *See also:*
 
-DSPatch (https://github.com/MarcusTomlinson/DSPatch) is a powerful C++ flow-based programming framework.
+DSPatch (https://github.com/MarcusTomlinson/DSPatch): A powerful C++ flow-based programming framework.
 
-DSPatcher (https://github.com/MarcusTomlinson/DSPatcher) is a cross-platform graphical tool for building DSPatch circuits.
+DSPatcher (https://github.com/MarcusTomlinson/DSPatcher): A cross-platform graphical tool for building DSPatch circuits.
