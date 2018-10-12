@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/MarcusTomlinson/DSPatchables.svg?branch=master)](https://travis-ci.org/MarcusTomlinson/DSPatchables)
+[![Build status](https://ci.appveyor.com/api/projects/status/7lixlpl0699oxb73/branch/master?svg=true)](https://ci.appveyor.com/project/MarcusTomlinson/dspatchables/branch/master)
 
 # DSPatchables
 DSPatch Component Repository
