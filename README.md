@@ -14,6 +14,9 @@ cmake ..
 make
 ```
 
+- *`cmake ..` will auto-detect your IDE / compiler. To manually select one, use `cmake -G`.*
+- *When building for an IDE, instead of `make`, simply open the cmake generated project file.*
+
 DSPatchables is a DSPatch component repository.
 
 *See also:*
