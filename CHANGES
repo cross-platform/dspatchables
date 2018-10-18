@@ -1,0 +1,7 @@
+v.0.11 (09 October 2018)
+    - Updates to support DSPatch v4.
+    - Added WaveReader and WaveWriter.
+    - Added CI.
+
+v.0.10 (09 April 2015)
+    - Alpha release.
