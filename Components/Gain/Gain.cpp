@@ -50,7 +50,8 @@ public:
 }  // namespace DSPatch
 
 Gain::Gain( float initGain )
-    : p( new internal::Gain( initGain ) )
+    : Component( ProcessOrder::OutOfOrder )
+    , p( new internal::Gain( initGain ) )
 {
     SetInputCount_( 2, {"in", "gain"} );
     SetOutputCount_( 1, {"out"} );
