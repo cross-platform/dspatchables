@@ -94,6 +94,7 @@ public:
     bool hasInputs = false;
     std::vector<std::string> nameHas;
     bool defaultIfNotFound = false;
+    bool loopback = false;
     bool notFoundNotified = false;
 
     std::function<void( bool )> callback = []( bool ) {};
@@ -103,10 +104,10 @@ public:
 }  // namespace DSPatchables
 }  // namespace DSPatch
 
-AudioDevice::AudioDevice( bool isOutputDevice, std::vector<std::string> deviceNameHas, bool defaultIfNotFound )
+AudioDevice::AudioDevice( bool isOutputDevice, std::vector<std::string> deviceNameHas, bool defaultIfNotFound, bool loopback )
     : p( new internal::AudioDevice() )
 {
-    SetDevice( isOutputDevice, deviceNameHas, defaultIfNotFound );
+    SetDevice( isOutputDevice, deviceNameHas, defaultIfNotFound, loopback );
 
     p->currentDeviceIndex = -1;
 }
@@ -166,7 +167,7 @@ bool AudioDevice::Available()
             }
             else if ( p->currentDevice.name != GetDeviceName( i ) )
             {
-                SetDevice( i );
+                SetDevice( i, p->loopback );
                 p->callback( true );
             }
             p->notFoundNotified = false;
@@ -188,7 +189,7 @@ bool AudioDevice::Available()
                 }
                 std::cout << "input device not found." << std::endl;
                 std::cout << "Switching to default input device: " << GetDeviceName( defaultInputDevice ) << std::endl;
-                SetDevice( defaultInputDevice );
+                SetDevice( defaultInputDevice, p->loopback );
             }
         }
         else if ( !p->hasInputs && !p->notFoundNotified )
@@ -203,7 +204,7 @@ bool AudioDevice::Available()
                 }
                 std::cout << "output device not found." << std::endl;
                 std::cout << "Switching to default output device: " << GetDeviceName( defaultOutputDevice ) << std::endl;
-                SetDevice( defaultOutputDevice );
+                SetDevice( defaultOutputDevice, p->loopback );
             }
         }
         return true;
@@ -218,14 +219,14 @@ bool AudioDevice::Available()
         }
         std::cout << ( p->hasInputs ? "input device" : "output device" ) << " not found. " << std::endl;
 
-        SetDevice( -1 );
+        SetDevice( -1, false );
         p->callback( false );
     }
 
     return false;
 }
 
-bool AudioDevice::SetDevice( int deviceIndex )
+bool AudioDevice::SetDevice( int deviceIndex, bool loopback )
 {
     if ( deviceIndex == -1 )
     {
@@ -251,11 +252,23 @@ bool AudioDevice::SetDevice( int deviceIndex )
         p->outputChannels.resize( p->outputParams.nChannels );
         SetInputCount_( p->outputParams.nChannels );
 
-        p->inputParams.nChannels = p->deviceList[deviceIndex].inputChannels;
-        p->inputParams.deviceId = deviceIndex;
+        // configure inputParams
+        if ( loopback )
+        {
+            p->inputParams.nChannels = p->deviceList[deviceIndex].outputChannels;
+            p->inputParams.deviceId = deviceIndex;
 
-        p->inputChannels.resize( p->inputParams.nChannels );
-        SetOutputCount_( p->inputParams.nChannels );
+            p->inputChannels.resize( p->outputParams.nChannels );
+            SetOutputCount_( p->outputParams.nChannels );
+        }
+        else
+        {
+            p->inputParams.nChannels = p->deviceList[deviceIndex].inputChannels;
+            p->inputParams.deviceId = deviceIndex;
+
+            p->inputChannels.resize( p->inputParams.nChannels );
+            SetOutputCount_( p->inputParams.nChannels );
+        }
 
         // the stream is started again via SetBufferSize()
         SetBufferSize( GetBufferSize() );
@@ -266,14 +279,14 @@ bool AudioDevice::SetDevice( int deviceIndex )
     return false;
 }
 
-bool AudioDevice::SetDevice( bool isOutputDevice, std::vector<std::string> deviceNameHas, bool defaultIfNotFound )
+bool AudioDevice::SetDevice( bool isOutputDevice, std::vector<std::string> deviceNameHas, bool defaultIfNotFound, bool loopback )
 {
     std::lock_guard<std::mutex> processLock( p->processMutex );
 
     {
         std::lock_guard<std::mutex> availableLock( p->availableMutex );
 
-        if ( p->hasInputs == !isOutputDevice && p->nameHas == deviceNameHas && p->defaultIfNotFound == defaultIfNotFound )
+        if ( p->hasInputs == !isOutputDevice && p->nameHas == deviceNameHas && p->defaultIfNotFound == defaultIfNotFound && p->loopback == loopback )
         {
             // Device already set, don't re-set unneccesarily
             return true;
@@ -282,6 +295,7 @@ bool AudioDevice::SetDevice( bool isOutputDevice, std::vector<std::string> devic
         p->hasInputs = !isOutputDevice;
         p->nameHas = deviceNameHas;
         p->defaultIfNotFound = defaultIfNotFound;
+        p->loopback = loopback;
     }
 
     return Available();
@@ -551,7 +565,7 @@ int DSPatchables::internal::AudioDevice::DynamicCallback( void* inputBuffer, voi
                 if ( inputChannels[i].size() )
                 {
                     memcpy( &inputChannels[i][0], shortInput, inputChannels[i].size() * sizeof( short ) );
-                    shortOutput += inputChannels[i].size();
+                    shortInput += inputChannels[i].size();
                 }
             }
         }

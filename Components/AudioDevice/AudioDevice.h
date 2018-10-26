@@ -41,14 +41,14 @@ class AudioDevice;
 class DLLEXPORT AudioDevice : public Component
 {
 public:
-    AudioDevice( bool isOutputDevice, std::vector<std::string> deviceNameHas, bool defaultIfNotFound );
+    AudioDevice( bool isOutputDevice, std::vector<std::string> deviceNameHas, bool defaultIfNotFound, bool loopback );
     virtual ~AudioDevice();
 
     bool Available();
     void SetAvailableCallback( std::function<void( bool )> const& callback );
 
-    bool SetDevice( int deviceIndex );
-    bool SetDevice( bool isOutputDevice, std::vector<std::string> deviceNameHas, bool defaultIfNotFound );
+    bool SetDevice( int deviceIndex, bool loopback );
+    bool SetDevice( bool isOutputDevice, std::vector<std::string> deviceNameHas, bool defaultIfNotFound, bool loopback );
 
     bool ReloadDevices();
 
@@ -76,7 +76,7 @@ private:
     std::unique_ptr<internal::AudioDevice> p;
 };
 
-EXPORT_PLUGIN( AudioDevice, true, std::vector<std::string>{"Built-in"}, true )
+EXPORT_PLUGIN( AudioDevice, true, std::vector<std::string>{"Built-in"}, true, true )
 
 }  // namespace DSPatchables
 }  // namespace DSPatch
