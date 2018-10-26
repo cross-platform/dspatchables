@@ -98,39 +98,95 @@ std::string RtAudio :: getVersion( void )
   return RTAUDIO_VERSION;
 }
 
-void RtAudio :: getCompiledApi( std::vector<RtAudio::Api> &apis )
-{
-  apis.clear();
+// Define API names and display names.
+// Must be in same order as API enum.
+extern "C" {
+const char* rtaudio_api_names[][2] = {
+  { "unspecified" , "Unknown" },
+  { "alsa"        , "ALSA" },
+  { "pulse"       , "Pulse" },
+  { "oss"         , "OpenSoundSystem" },
+  { "jack"        , "Jack" },
+  { "core"        , "CoreAudio" },
+  { "wasapi"      , "WASAPI" },
+  { "asio"        , "ASIO" },
+  { "ds"          , "DirectSound" },
+  { "dummy"       , "Dummy" },
+};
+const unsigned int rtaudio_num_api_names = 
+  sizeof(rtaudio_api_names)/sizeof(rtaudio_api_names[0]);
 
-  // The order here will control the order of RtAudio's API search in
-  // the constructor.
+// The order here will control the order of RtAudio's API search in
+// the constructor.
+extern "C" const RtAudio::Api rtaudio_compiled_apis[] = {
 #if defined(__UNIX_JACK__)
-  apis.push_back( UNIX_JACK );
+  RtAudio::UNIX_JACK,
 #endif
 #if defined(__LINUX_PULSE__)
-  apis.push_back( LINUX_PULSE );
+  RtAudio::LINUX_PULSE,
 #endif
 #if defined(__LINUX_ALSA__)
-  apis.push_back( LINUX_ALSA );
+  RtAudio::LINUX_ALSA,
 #endif
 #if defined(__LINUX_OSS__)
-  apis.push_back( LINUX_OSS );
+  RtAudio::LINUX_OSS,
 #endif
 #if defined(__WINDOWS_ASIO__)
-  apis.push_back( WINDOWS_ASIO );
+  RtAudio::WINDOWS_ASIO,
 #endif
 #if defined(__WINDOWS_WASAPI__)
-  apis.push_back( WINDOWS_WASAPI );
+  RtAudio::WINDOWS_WASAPI,
 #endif
 #if defined(__WINDOWS_DS__)
-  apis.push_back( WINDOWS_DS );
+  RtAudio::WINDOWS_DS,
 #endif
 #if defined(__MACOSX_CORE__)
-  apis.push_back( MACOSX_CORE );
+  RtAudio::MACOSX_CORE,
 #endif
 #if defined(__RTAUDIO_DUMMY__)
-  apis.push_back( RTAUDIO_DUMMY );
+  RtAudio::RTAUDIO_DUMMY,
 #endif
+  RtAudio::UNSPECIFIED,
+};
+extern "C" const unsigned int rtaudio_num_compiled_apis =
+  sizeof(rtaudio_compiled_apis)/sizeof(rtaudio_compiled_apis[0])-1;
+}
+
+// This is a compile-time check that rtaudio_num_api_names == RtAudio::NUM_APIS.
+// If the build breaks here, check that they match.
+template<bool b> class StaticAssert { private: StaticAssert() {} };
+template<> class StaticAssert<true>{ public: StaticAssert() {} };
+class StaticAssertions { StaticAssertions() {
+  StaticAssert<rtaudio_num_api_names == RtAudio::NUM_APIS>();
+}};
+
+void RtAudio :: getCompiledApi( std::vector<RtAudio::Api> &apis )
+{
+  apis = std::vector<RtAudio::Api>(rtaudio_compiled_apis,
+                                   rtaudio_compiled_apis + rtaudio_num_compiled_apis);
+}
+
+std::string RtAudio :: getApiName( RtAudio::Api api )
+{
+  if (api < 0 || api >= RtAudio::NUM_APIS)
+    return "";
+  return rtaudio_api_names[api][0];
+}
+
+std::string RtAudio :: getApiDisplayName( RtAudio::Api api )
+{
+  if (api < 0 || api >= RtAudio::NUM_APIS)
+    return "Unknown";
+  return rtaudio_api_names[api][1];
+}
+
+RtAudio::Api RtAudio :: getCompiledApiByName( const std::string &name )
+{
+  unsigned int i=0;
+  for (i = 0; i < rtaudio_num_compiled_apis; ++i)
+    if (name == rtaudio_api_names[rtaudio_compiled_apis[i]][0])
+      return rtaudio_compiled_apis[i];
+  return RtAudio::UNSPECIFIED;
 }
 
 void RtAudio :: openRtApi( RtAudio::Api api )
@@ -3165,8 +3221,8 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
   result = ASIOCreateBuffers( handle->bufferInfos, nChannels, stream_.bufferSize, &asioCallbacks );
   if ( result != ASE_OK ) {
     // Standard method failed. This can happen with strict/misbehaving drivers that return valid buffer size ranges
-    // but only accept the preferred buffer size as parameter for ASIOCreateBuffers. eg. Creatives ASIO driver
-    // in that case, let's be naïve and try that instead
+    // but only accept the preferred buffer size as parameter for ASIOCreateBuffers (e.g. Creative's ASIO driver).
+    // In that case, let's be naïve and try that instead.
     *bufferSize = preferSize;
     stream_.bufferSize = *bufferSize;
     result = ASIOCreateBuffers( handle->bufferInfos, nChannels, stream_.bufferSize, &asioCallbacks );
@@ -4114,10 +4170,9 @@ RtApiWasapi::RtApiWasapi()
                          CLSCTX_ALL, __uuidof( IMMDeviceEnumerator ),
                          ( void** ) &deviceEnumerator_ );
 
-  if ( FAILED( hr ) ) {
-    errorText_ = "RtApiWasapi::RtApiWasapi: Unable to instantiate device enumerator";
-    error( RtAudioError::DRIVER_ERROR );
-  }
+  // If this runs on an old Windows, it will fail. Ignore and proceed.
+  if ( FAILED( hr ) )
+    deviceEnumerator_ = NULL;
 }
 
 //-----------------------------------------------------------------------------
@@ -4143,6 +4198,9 @@ unsigned int RtApiWasapi::getDeviceCount( void )
 
   IMMDeviceCollection* captureDevices = NULL;
   IMMDeviceCollection* renderDevices = NULL;
+
+  if ( !deviceEnumerator_ )
+    return 0;
 
   // Count capture devices
   errorText_.clear();
@@ -7446,10 +7504,12 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     if ( result == 0 ) {
       if ( nDevices == device ) {
         strcpy( name, "default" );
+        snd_ctl_close( chandle );
         goto foundDevice;
       }
       nDevices++;
     }
+    snd_ctl_close( chandle );
 
     if ( nDevices == 0 ) {
       // This should not happen because a check is made before this function is called.
@@ -7849,7 +7909,7 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigne
     pthread_attr_t attr;
     pthread_attr_init( &attr );
     pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_JOINABLE );
-#ifdef SCHED_RR // Undefined with some OSes (eg: NetBSD 1.6.x with GNU Pthread)
+#ifdef SCHED_RR // Undefined with some OSes (e.g. NetBSD 1.6.x with GNU Pthread)
     if ( options && options->flags & RTAUDIO_SCHEDULE_REALTIME ) {
       stream_.callbackInfo.doRealtime = true;
       struct sched_param param;
@@ -8298,7 +8358,7 @@ static void *alsaCallbackHandler( void *ptr )
   RtApiAlsa *object = (RtApiAlsa *) info->object;
   bool *isRunning = &info->isRunning;
 
-#ifdef SCHED_RR // Undefined with some OSes (eg: NetBSD 1.6.x with GNU Pthread)
+#ifdef SCHED_RR // Undefined with some OSes (e.g. NetBSD 1.6.x with GNU Pthread)
   if ( info->doRealtime ) {
     std::cerr << "RtAudio alsa: " << 
              (sched_getscheduler(0) == SCHED_RR ? "" : "_NOT_ ") << 
@@ -8386,7 +8446,7 @@ static void *pulseaudio_callback( void * user )
   RtApiPulse *context = static_cast<RtApiPulse *>( cbi->object );
   volatile bool *isRunning = &cbi->isRunning;
   
-#ifdef SCHED_RR // Undefined with some OSes (eg: NetBSD 1.6.x with GNU Pthread)
+#ifdef SCHED_RR // Undefined with some OSes (e.g. NetBSD 1.6.x with GNU Pthread)
   if (cbi->doRealtime) {
     std::cerr << "RtAudio pulse: " << 
              (sched_getscheduler(0) == SCHED_RR ? "" : "_NOT_ ") << 
@@ -8789,7 +8849,7 @@ bool RtApiPulse::probeDeviceOpen( unsigned int device, StreamMode mode,
     pthread_attr_t attr;
     pthread_attr_init( &attr );
     pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_JOINABLE );
-#ifdef SCHED_RR // Undefined with some OSes (eg: NetBSD 1.6.x with GNU Pthread)
+#ifdef SCHED_RR // Undefined with some OSes (e.g. NetBSD 1.6.x with GNU Pthread)
     if ( options && options->flags & RTAUDIO_SCHEDULE_REALTIME ) {
       stream_.callbackInfo.doRealtime = true;
       struct sched_param param;
@@ -9410,7 +9470,7 @@ bool RtApiOss :: probeDeviceOpen( unsigned int device, StreamMode mode, unsigned
     pthread_attr_t attr;
     pthread_attr_init( &attr );
     pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_JOINABLE );
-#ifdef SCHED_RR // Undefined with some OSes (eg: NetBSD 1.6.x with GNU Pthread)
+#ifdef SCHED_RR // Undefined with some OSes (e.g. NetBSD 1.6.x with GNU Pthread)
     if ( options && options->flags & RTAUDIO_SCHEDULE_REALTIME ) {
       stream_.callbackInfo.doRealtime = true;
       struct sched_param param;
@@ -9801,7 +9861,7 @@ static void *ossCallbackHandler( void *ptr )
   RtApiOss *object = (RtApiOss *) info->object;
   bool *isRunning = &info->isRunning;
 
-#ifdef SCHED_RR // Undefined with some OSes (eg: NetBSD 1.6.x with GNU Pthread)
+#ifdef SCHED_RR // Undefined with some OSes (e.g. NetBSD 1.6.x with GNU Pthread)
   if (info->doRealtime) {
     std::cerr << "RtAudio oss: " << 
              (sched_getscheduler(0) == SCHED_RR ? "" : "_NOT_ ") << 
