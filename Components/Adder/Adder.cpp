@@ -43,7 +43,8 @@ class Adder
 }  // namespace DSPatch
 
 Adder::Adder()
-    : p( new internal::Adder() )
+    : Component( ProcessOrder::OutOfOrder )
+    , p( new internal::Adder() )
 {
     // add 2 inputs
     SetInputCount_( 2, {"in1", "in2"} );
