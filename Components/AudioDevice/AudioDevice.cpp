@@ -104,7 +104,7 @@ public:
 }  // namespace DSPatchables
 }  // namespace DSPatch
 
-AudioDevice::AudioDevice( bool isOutputDevice, std::vector<std::string> deviceNameHas, bool defaultIfNotFound, bool loopback )
+AudioDevice::AudioDevice( bool isOutputDevice, std::vector<std::string> const& deviceNameHas, bool defaultIfNotFound, bool loopback )
     : p( new internal::AudioDevice() )
 {
     SetDevice( isOutputDevice, deviceNameHas, defaultIfNotFound, loopback );
@@ -279,14 +279,18 @@ bool AudioDevice::SetDevice( int deviceIndex, bool loopback )
     return false;
 }
 
-bool AudioDevice::SetDevice( bool isOutputDevice, std::vector<std::string> deviceNameHas, bool defaultIfNotFound, bool loopback )
+bool AudioDevice::SetDevice( bool isOutputDevice,
+                             std::vector<std::string> const& deviceNameHas,
+                             bool defaultIfNotFound,
+                             bool loopback )
 {
     std::lock_guard<std::mutex> processLock( p->processMutex );
 
     {
         std::lock_guard<std::mutex> availableLock( p->availableMutex );
 
-        if ( p->hasInputs == !isOutputDevice && p->nameHas == deviceNameHas && p->defaultIfNotFound == defaultIfNotFound && p->loopback == loopback )
+        if ( p->hasInputs == !isOutputDevice && p->nameHas == deviceNameHas && p->defaultIfNotFound == defaultIfNotFound &&
+             p->loopback == loopback )
         {
             // Device already set, don't re-set unneccesarily
             return true;
@@ -499,7 +503,7 @@ void DSPatchables::internal::AudioDevice::StopStream()
 
     if ( audioStream.isStreamOpen() )
     {
-        std::lock_guard<std::mutex> lock( processMutex ); // wait for Process_() to exit
+        std::lock_guard<std::mutex> lock( processMutex );  // wait for Process_() to exit
         audioStream.closeStream();
     }
 }
