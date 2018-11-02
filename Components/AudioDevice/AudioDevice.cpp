@@ -258,8 +258,8 @@ bool AudioDevice::SetDevice( int deviceIndex, bool loopback )
             p->inputParams.nChannels = p->deviceList[deviceIndex].outputChannels;
             p->inputParams.deviceId = deviceIndex;
 
-            p->inputChannels.resize( p->outputParams.nChannels );
-            SetOutputCount_( p->outputParams.nChannels );
+            p->inputChannels.resize( p->inputParams.nChannels );
+            SetOutputCount_( p->inputParams.nChannels );
         }
         else
         {
