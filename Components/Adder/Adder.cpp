@@ -68,5 +68,5 @@ void Adder::Process_( SignalBus const& inputs, SignalBus& outputs )
         ( *in1 )[i] += ( *in2 )[i];  // perform addition sample-by-sample
     }
 
-    outputs.SetValue( 0, inputs, 0 );  // move combined signal to output
+    outputs.MoveSignal( 0, inputs.GetSignal( 0 ) );  // move combined signal to output
 }
