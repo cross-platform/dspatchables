@@ -50,7 +50,7 @@ class AudioDevice
 public:
     AudioDevice()
     {
-        for ( unsigned int i = 0; i < audioStream.getDeviceCount(); i++ )
+        for ( unsigned int i = 0; i < audioStream.getDeviceCount(); ++i )
         {
             deviceList.push_back( audioStream.getDeviceInfo( i ) );
         }
@@ -294,7 +294,7 @@ bool AudioDevice::ReloadDevices()
 
     bool devicesChanged = false;
 
-    for ( unsigned int i = 0; i < deviceCount; i++ )
+    for ( unsigned int i = 0; i < deviceCount; ++i )
     {
         newDeviceList.push_back( p->audioStream.getDeviceInfo( i ) );
 
@@ -358,7 +358,7 @@ void AudioDevice::SetBufferSize( int bufferSize )
     p->StopStream();
 
     p->bufferSize = bufferSize;
-    for ( size_t i = 0; i < p->inputChannels.size(); i++ )
+    for ( size_t i = 0; i < p->inputChannels.size(); ++i )
     {
         p->inputChannels[i].resize( bufferSize );
     }
@@ -430,7 +430,7 @@ void AudioDevice::Process_( SignalBus const& inputs, SignalBus& outputs )
 
     // Retrieve incoming component buffers for the sound card to output
     // ================================================================
-    for ( size_t i = 0; i < p->outputChannels.size(); i++ )
+    for ( size_t i = 0; i < p->outputChannels.size(); ++i )
     {
         buffer = inputs.GetValue<std::vector<short>>( i );
         if ( buffer )
@@ -445,7 +445,7 @@ void AudioDevice::Process_( SignalBus const& inputs, SignalBus& outputs )
 
     // Retrieve incoming sound card buffers for the component to output
     // ================================================================
-    for ( size_t i = 0; i < p->inputChannels.size(); i++ )
+    for ( size_t i = 0; i < p->inputChannels.size(); ++i )
     {
         outputs.SetValue( i, p->inputChannels[i] );
     }
@@ -534,7 +534,7 @@ int DSPatchables::internal::AudioDevice::DynamicCallback( void* inputBuffer, voi
 
         if ( outputBuffer != nullptr )
         {
-            for ( size_t i = 0; i < outputChannels.size(); i++ )
+            for ( size_t i = 0; i < outputChannels.size(); ++i )
             {
                 if ( outputChannels[i].size() )
                 {
@@ -546,7 +546,7 @@ int DSPatchables::internal::AudioDevice::DynamicCallback( void* inputBuffer, voi
 
         if ( inputBuffer != nullptr )
         {
-            for ( size_t i = 0; i < inputChannels.size(); i++ )
+            for ( size_t i = 0; i < inputChannels.size(); ++i )
             {
                 if ( inputChannels[i].size() )
                 {

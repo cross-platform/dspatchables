@@ -81,7 +81,7 @@ void Gain::Process_( SignalBus const& inputs, SignalBus& outputs )
         p->gain = *gain;
     }
 
-    for ( size_t i = 0; i < in->size(); i++ )
+    for ( size_t i = 0; i < in->size(); ++i )
     {
         ( *in )[i] *= p->gain;  // apply gain sample-by-sample
     }

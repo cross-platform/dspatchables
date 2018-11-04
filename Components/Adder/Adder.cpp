@@ -63,7 +63,7 @@ void Adder::Process_( SignalBus const& inputs, SignalBus& outputs )
         return;
     }
 
-    for ( size_t i = 0; i < in1->size(); i++ )
+    for ( size_t i = 0; i < in1->size(); ++i )
     {
         ( *in1 )[i] += ( *in2 )[i];  // perform addition sample-by-sample
     }

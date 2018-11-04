@@ -158,7 +158,7 @@ void Oscillator::Process_( SignalBus const& inputs, SignalBus& outputs )
 
     if ( p->signalLookup.size() != 0 )
     {
-        for ( size_t i = 0; i < p->signal.size(); i++ )
+        for ( size_t i = 0; i < p->signal.size(); ++i )
         {
             if ( p->lastPos >= p->lookupLength )
             {
@@ -181,7 +181,7 @@ void DSPatchables::internal::Oscillator::BuildLookup()
     signal.resize( bufferSize );
     signalLookup.resize( lookupLength );
 
-    for ( int i = 0; i < lookupLength; i++ )
+    for ( int i = 0; i < lookupLength; ++i )
     {
         signalLookup[i] = sin( angleInc * i ) * amplitude * 32767;
     }
