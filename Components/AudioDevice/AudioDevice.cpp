@@ -358,9 +358,9 @@ void AudioDevice::SetBufferSize( int bufferSize )
     p->StopStream();
 
     p->bufferSize = bufferSize;
-    for ( size_t i = 0; i < p->inputChannels.size(); ++i )
+    for ( auto& inputChannel : p->inputChannels )
     {
-        p->inputChannels[i].resize( bufferSize );
+        inputChannel.resize( bufferSize );
     }
 
     p->StartStream();
@@ -485,7 +485,7 @@ void DSPatchables::internal::AudioDevice::StopStream()
 
     if ( audioStream.isStreamOpen() )
     {
-        std::lock_guard<std::mutex> lock( processMutex ); // wait for Process_() to exit
+        std::lock_guard<std::mutex> lock( processMutex );  // wait for Process_() to exit
         audioStream.closeStream();
     }
 }
@@ -534,24 +534,24 @@ int DSPatchables::internal::AudioDevice::DynamicCallback( void* inputBuffer, voi
 
         if ( outputBuffer != nullptr )
         {
-            for ( size_t i = 0; i < outputChannels.size(); ++i )
+            for ( auto& outputChannel : outputChannels )
             {
-                if ( !outputChannels[i].empty() )
+                if ( !outputChannel.empty() )
                 {
-                    memcpy( shortOutput, &outputChannels[i][0], outputChannels[i].size() * sizeof( short ) );
-                    shortOutput += outputChannels[i].size();
+                    memcpy( shortOutput, &outputChannel[0], outputChannel.size() * sizeof( short ) );
+                    shortOutput += outputChannel.size();
                 }
             }
         }
 
         if ( inputBuffer != nullptr )
         {
-            for ( size_t i = 0; i < inputChannels.size(); ++i )
+            for ( auto& inputChannel : inputChannels )
             {
-                if ( !inputChannels[i].empty() )
+                if ( !inputChannel.empty() )
                 {
-                    memcpy( &inputChannels[i][0], shortInput, inputChannels[i].size() * sizeof( short ) );
-                    shortOutput += inputChannels[i].size();
+                    memcpy( &inputChannel[0], shortInput, inputChannel.size() * sizeof( short ) );
+                    shortInput += inputChannel.size();
                 }
             }
         }

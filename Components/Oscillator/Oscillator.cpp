@@ -158,13 +158,13 @@ void Oscillator::Process_( SignalBus const& inputs, SignalBus& outputs )
 
     if ( !p->signalLookup.empty() )
     {
-        for ( size_t i = 0; i < p->signal.size(); ++i )
+        for ( auto& sample : p->signal )
         {
             if ( p->lastPos >= p->lookupLength )
             {
                 p->lastPos = 0;
             }
-            p->signal[i] = p->signalLookup[p->lastPos++];
+            sample = p->signalLookup[p->lastPos++];
         }
 
         outputs.SetValue( 0, p->signal );
