@@ -24,8 +24,6 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 #include <Oscillator.h>
 
-#include <math.h>
-
 const int c_sampleRate = 44100;
 const int c_bufferSize = 441;  // Process 10ms chunks of data @ 44100Hz
 
@@ -156,7 +154,7 @@ void Oscillator::Process_( SignalBus const& inputs, SignalBus& outputs )
 
     std::lock_guard<std::mutex> lock( p->processMutex );
 
-    if ( p->signalLookup.size() != 0 )
+    if ( !p->signalLookup.empty() )
     {
         for ( size_t i = 0; i < p->signal.size(); ++i )
         {

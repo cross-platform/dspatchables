@@ -41,14 +41,14 @@ class AudioDevice;
 class DLLEXPORT AudioDevice : public Component
 {
 public:
-    AudioDevice( bool isOutputDevice, std::vector<std::string> deviceNameHas, bool defaultIfNotFound );
+    AudioDevice( bool isOutputDevice, std::vector<std::string> const& deviceNameHas, bool defaultIfNotFound );
     virtual ~AudioDevice();
 
     bool Available();
     void SetAvailableCallback( std::function<void( bool )> const& callback );
 
     bool SetDevice( int deviceIndex );
-    bool SetDevice( bool isOutputDevice, std::vector<std::string> deviceNameHas, bool defaultIfNotFound );
+    bool SetDevice( bool isOutputDevice, std::vector<std::string> const& deviceNameHas, bool defaultIfNotFound );
 
     bool ReloadDevices();
 

@@ -24,7 +24,6 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 #include <WaveWriter.h>
 
-#include <cmath>
 #include <fstream>
 #include <iostream>
 
@@ -53,6 +52,7 @@ class WaveWriter
 public:
     WaveWriter( std::string const& fileName, int channelCount )
         : file( fileName, std::ios::binary )
+	    , dataPos( 0 )
         , channelCount( channelCount )
     {
     }
@@ -89,7 +89,7 @@ WaveWriter::WaveWriter( std::string const& fileName, int channelCount, int bitsP
 WaveWriter::~WaveWriter()
 {
     // (We'll need the final file size to fix the chunk sizes above)
-    size_t file_length = (size_t)p->file.tellp();
+    auto file_length = (size_t)p->file.tellp();
 
     // Fix the data chunk header to contain the data size
     p->file.seekp( p->dataPos + 4 );

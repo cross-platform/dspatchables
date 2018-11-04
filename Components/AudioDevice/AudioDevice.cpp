@@ -27,7 +27,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #include <RtAudio.h>
 
 #include <algorithm>
-#include <string.h>
+#include <cstring>
 
 const int c_sampleRate = 44100;
 const int c_bufferSize = 441;  // Process 10ms chunks of data @ 44100Hz
@@ -103,7 +103,7 @@ public:
 }  // namespace DSPatchables
 }  // namespace DSPatch
 
-AudioDevice::AudioDevice( bool isOutputDevice, std::vector<std::string> deviceNameHas, bool defaultIfNotFound )
+AudioDevice::AudioDevice( bool isOutputDevice, std::vector<std::string> const& deviceNameHas, bool defaultIfNotFound )
     : p( new internal::AudioDevice() )
 {
     SetDevice( isOutputDevice, deviceNameHas, defaultIfNotFound );
@@ -182,7 +182,7 @@ bool AudioDevice::Available()
             if ( GetCurrentDevice() != defaultInputDevice )
             {
                 p->notFoundNotified = true;
-                for ( auto sub : p->nameHas )
+                for ( auto const& sub : p->nameHas )
                 {
                     std::cout << sub << " ";
                 }
@@ -197,7 +197,7 @@ bool AudioDevice::Available()
             if ( GetCurrentDevice() != defaultOutputDevice )
             {
                 p->notFoundNotified = true;
-                for ( auto sub : p->nameHas )
+                for ( auto const& sub : p->nameHas )
                 {
                     std::cout << sub << " ";
                 }
@@ -212,7 +212,7 @@ bool AudioDevice::Available()
     if ( !p->notFoundNotified )
     {
         p->notFoundNotified = true;
-        for ( auto sub : p->nameHas )
+        for ( auto const& sub : p->nameHas )
         {
             std::cout << sub << " ";
         }
@@ -266,7 +266,7 @@ bool AudioDevice::SetDevice( int deviceIndex )
     return false;
 }
 
-bool AudioDevice::SetDevice( bool isOutputDevice, std::vector<std::string> deviceNameHas, bool defaultIfNotFound )
+bool AudioDevice::SetDevice( bool isOutputDevice, std::vector<std::string> const& deviceNameHas, bool defaultIfNotFound )
 {
     std::lock_guard<std::mutex> processLock( p->processMutex );
 
@@ -421,7 +421,7 @@ void AudioDevice::Process_( SignalBus const& inputs, SignalBus& outputs )
     auto buffer = inputs.GetValue<std::vector<short>>( 0 );
     if ( buffer )
     {
-        if ( GetBufferSize() != (int)buffer->size() && buffer->size() != 0 )
+        if ( GetBufferSize() != (int)buffer->size() && !buffer->empty() )
         {
             SetBufferSize( buffer->size() );
             return;
@@ -536,7 +536,7 @@ int DSPatchables::internal::AudioDevice::DynamicCallback( void* inputBuffer, voi
         {
             for ( size_t i = 0; i < outputChannels.size(); ++i )
             {
-                if ( outputChannels[i].size() )
+                if ( !outputChannels[i].empty() )
                 {
                     memcpy( shortOutput, &outputChannels[i][0], outputChannels[i].size() * sizeof( short ) );
                     shortOutput += outputChannels[i].size();
@@ -548,7 +548,7 @@ int DSPatchables::internal::AudioDevice::DynamicCallback( void* inputBuffer, voi
         {
             for ( size_t i = 0; i < inputChannels.size(); ++i )
             {
-                if ( inputChannels[i].size() )
+                if ( !inputChannels[i].empty() )
                 {
                     memcpy( &inputChannels[i][0], shortInput, inputChannels[i].size() * sizeof( short ) );
                     shortOutput += inputChannels[i].size();
