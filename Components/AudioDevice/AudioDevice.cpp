@@ -52,7 +52,7 @@ public:
     {
         for ( unsigned int i = 0; i < audioStream.getDeviceCount(); ++i )
         {
-            deviceList.push_back( audioStream.getDeviceInfo( i ) );
+            deviceList.emplace_back( audioStream.getDeviceInfo( i ) );
         }
     }
 
@@ -296,7 +296,7 @@ bool AudioDevice::ReloadDevices()
 
     for ( unsigned int i = 0; i < deviceCount; ++i )
     {
-        newDeviceList.push_back( p->audioStream.getDeviceInfo( i ) );
+        newDeviceList.emplace_back( p->audioStream.getDeviceInfo( i ) );
 
         if ( i >= p->deviceList.size() || newDeviceList[i].name != p->deviceList[i].name )
         {

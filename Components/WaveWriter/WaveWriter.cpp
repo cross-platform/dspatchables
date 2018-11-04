@@ -112,7 +112,7 @@ void WaveWriter::Process_( SignalBus const& inputs, SignalBus& )
             return;  // input buffer missing
         }
 
-        ins.push_back( in );
+        ins.emplace_back( in );
     }
 
     for ( int i = 0; i < p->channelCount - 1; ++i )
