@@ -24,7 +24,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 #include <Oscillator.h>
 
-#include <math.h>
+#include <cmath>
 
 const int c_sampleRate = 44100;
 const int c_bufferSize = 441;  // Process 10ms chunks of data @ 44100Hz
@@ -156,15 +156,15 @@ void Oscillator::Process_( SignalBus const& inputs, SignalBus& outputs )
 
     std::lock_guard<std::mutex> lock( p->processMutex );
 
-    if ( p->signalLookup.size() != 0 )
+    if ( !p->signalLookup.empty() )
     {
-        for ( size_t i = 0; i < p->signal.size(); i++ )
+        for ( auto& sample : p->signal )
         {
             if ( p->lastPos >= p->lookupLength )
             {
                 p->lastPos = 0;
             }
-            p->signal[i] = p->signalLookup[p->lastPos++];
+            sample = p->signalLookup[p->lastPos++];
         }
 
         outputs.SetValue( 0, p->signal );
@@ -181,7 +181,7 @@ void DSPatchables::internal::Oscillator::BuildLookup()
     signal.resize( bufferSize );
     signalLookup.resize( lookupLength );
 
-    for ( int i = 0; i < lookupLength; i++ )
+    for ( int i = 0; i < lookupLength; ++i )
     {
         signalLookup[i] = sin( angleInc * i ) * amplitude * 32767;
     }

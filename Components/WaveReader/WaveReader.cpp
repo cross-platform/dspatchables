@@ -24,9 +24,9 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 #include <WaveReader.h>
 
+#include <cstring>
 #include <fstream>
 #include <iostream>
-#include <string.h>
 
 const int c_bufferSize = 441;  // Process 10ms chunks of data @ 44100Hz
 

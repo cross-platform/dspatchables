@@ -81,10 +81,10 @@ void Gain::Process_( SignalBus const& inputs, SignalBus& outputs )
         p->gain = *gain;
     }
 
-    for ( size_t i = 0; i < in->size(); i++ )
+    for ( auto& inSample : *in )
     {
-        ( *in )[i] *= p->gain;  // apply gain sample-by-sample
+        inSample *= p->gain;  // apply gain sample-by-sample
     }
 
-    outputs.SetValue( 0, inputs, 0 );  // move gained input signal to output
+    outputs.MoveSignal( 0, inputs.GetSignal( 0 ) );  // move gained input signal to output
 }

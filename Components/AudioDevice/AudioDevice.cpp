@@ -27,7 +27,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #include <RtAudio.h>
 
 #include <algorithm>
-#include <string.h>
+#include <cstring>
 
 const int c_sampleRate = 44100;
 const int c_bufferSize = 441;  // Process 10ms chunks of data @ 44100Hz
@@ -50,9 +50,9 @@ class AudioDevice
 public:
     AudioDevice()
     {
-        for ( unsigned int i = 0; i < audioStream.getDeviceCount(); i++ )
+        for ( unsigned int i = 0; i < audioStream.getDeviceCount(); ++i )
         {
-            deviceList.push_back( audioStream.getDeviceInfo( i ) );
+            deviceList.emplace_back( audioStream.getDeviceInfo( i ) );
         }
     }
 
@@ -183,7 +183,7 @@ bool AudioDevice::Available()
             if ( GetCurrentDevice() != defaultInputDevice )
             {
                 p->notFoundNotified = true;
-                for ( auto sub : p->nameHas )
+                for ( auto const& sub : p->nameHas )
                 {
                     std::cout << sub << " ";
                 }
@@ -198,7 +198,7 @@ bool AudioDevice::Available()
             if ( GetCurrentDevice() != defaultOutputDevice )
             {
                 p->notFoundNotified = true;
-                for ( auto sub : p->nameHas )
+                for ( auto const& sub : p->nameHas )
                 {
                     std::cout << sub << " ";
                 }
@@ -213,7 +213,7 @@ bool AudioDevice::Available()
     if ( !p->notFoundNotified )
     {
         p->notFoundNotified = true;
-        for ( auto sub : p->nameHas )
+        for ( auto const& sub : p->nameHas )
         {
             std::cout << sub << " ";
         }
@@ -312,9 +312,9 @@ bool AudioDevice::ReloadDevices()
 
     bool devicesChanged = false;
 
-    for ( unsigned int i = 0; i < deviceCount; i++ )
+    for ( unsigned int i = 0; i < deviceCount; ++i )
     {
-        newDeviceList.push_back( p->audioStream.getDeviceInfo( i ) );
+        newDeviceList.emplace_back( p->audioStream.getDeviceInfo( i ) );
 
         if ( i >= p->deviceList.size() || newDeviceList[i].name != p->deviceList[i].name )
         {
@@ -376,9 +376,9 @@ void AudioDevice::SetBufferSize( int bufferSize )
     p->StopStream();
 
     p->bufferSize = bufferSize;
-    for ( size_t i = 0; i < p->inputChannels.size(); i++ )
+    for ( auto& inputChannel : p->inputChannels )
     {
-        p->inputChannels[i].resize( bufferSize );
+        inputChannel.resize( bufferSize );
     }
 
     p->StartStream();
@@ -439,7 +439,7 @@ void AudioDevice::Process_( SignalBus const& inputs, SignalBus& outputs )
     auto buffer = inputs.GetValue<std::vector<short>>( 0 );
     if ( buffer )
     {
-        if ( GetBufferSize() != (int)buffer->size() && buffer->size() != 0 )
+        if ( GetBufferSize() != (int)buffer->size() && !buffer->empty() )
         {
             SetBufferSize( buffer->size() );
             return;
@@ -448,7 +448,7 @@ void AudioDevice::Process_( SignalBus const& inputs, SignalBus& outputs )
 
     // Retrieve incoming component buffers for the sound card to output
     // ================================================================
-    for ( size_t i = 0; i < p->outputChannels.size(); i++ )
+    for ( size_t i = 0; i < p->outputChannels.size(); ++i )
     {
         buffer = inputs.GetValue<std::vector<short>>( i );
         if ( buffer )
@@ -463,7 +463,7 @@ void AudioDevice::Process_( SignalBus const& inputs, SignalBus& outputs )
 
     // Retrieve incoming sound card buffers for the component to output
     // ================================================================
-    for ( size_t i = 0; i < p->inputChannels.size(); i++ )
+    for ( size_t i = 0; i < p->inputChannels.size(); ++i )
     {
         outputs.SetValue( i, p->inputChannels[i] );
     }
@@ -552,24 +552,24 @@ int DSPatchables::internal::AudioDevice::DynamicCallback( void* inputBuffer, voi
 
         if ( outputBuffer != nullptr )
         {
-            for ( size_t i = 0; i < outputChannels.size(); i++ )
+            for ( auto& outputChannel : outputChannels )
             {
-                if ( outputChannels[i].size() )
+                if ( !outputChannel.empty() )
                 {
-                    memcpy( shortOutput, &outputChannels[i][0], outputChannels[i].size() * sizeof( short ) );
-                    shortOutput += outputChannels[i].size();
+                    memcpy( shortOutput, &outputChannel[0], outputChannel.size() * sizeof( short ) );
+                    shortOutput += outputChannel.size();
                 }
             }
         }
 
         if ( inputBuffer != nullptr )
         {
-            for ( size_t i = 0; i < inputChannels.size(); i++ )
+            for ( auto& inputChannel : inputChannels )
             {
-                if ( inputChannels[i].size() )
+                if ( !inputChannel.empty() )
                 {
-                    memcpy( &inputChannels[i][0], shortInput, inputChannels[i].size() * sizeof( short ) );
-                    shortInput += inputChannels[i].size();
+                    memcpy( &inputChannel[0], shortInput, inputChannel.size() * sizeof( short ) );
+                    shortInput += inputChannel.size();
                 }
             }
         }
