@@ -27,6 +27,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #include <RtAudio.h>
 
 #include <algorithm>
+#include <condition_variable>
 #include <cstring>
 
 const int c_sampleRate = 44100;
