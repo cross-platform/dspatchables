@@ -52,7 +52,7 @@ class WaveWriter
 public:
     WaveWriter( std::string const& fileName, int channelCount )
         : file( fileName, std::ios::binary )
-	    , dataPos( 0 )
+        , dataPos( 0 )
         , channelCount( channelCount )
     {
     }
