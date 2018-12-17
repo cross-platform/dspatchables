@@ -473,7 +473,7 @@ void AudioDevice::Process_( SignalBus const& inputs, SignalBus& outputs )
     // ================================================
     std::lock_guard<std::mutex> lock( p->buffersMutex );
     p->gotWaitReady = true;     // set release flag
-    p->waitCondt.notify_one();  // release sync
+    p->waitCondt.notify_all();  // release sync
 }
 
 void DSPatchables::internal::AudioDevice::WaitForBuffer()
@@ -490,7 +490,7 @@ void DSPatchables::internal::AudioDevice::SyncBuffer()
 {
     std::lock_guard<std::mutex> lock( syncMutex );
     gotSyncReady = true;     // set release flag
-    syncCondt.notify_one();  // release sync
+    syncCondt.notify_all();  // release sync
 }
 
 void DSPatchables::internal::AudioDevice::StopStream()
@@ -499,7 +499,7 @@ void DSPatchables::internal::AudioDevice::StopStream()
 
     buffersMutex.lock();
     gotWaitReady = true;     // set release flag
-    waitCondt.notify_one();  // release sync
+    waitCondt.notify_all();  // release sync
     buffersMutex.unlock();
 
     if ( audioStream.isStreamOpen() )
