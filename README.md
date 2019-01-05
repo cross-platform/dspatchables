@@ -1,11 +1,11 @@
-[![Build Status](https://travis-ci.org/MarcusTomlinson/DSPatchables.svg?branch=master)](https://travis-ci.org/MarcusTomlinson/DSPatchables)
-[![Build status](https://ci.appveyor.com/api/projects/status/7lixlpl0699oxb73/branch/master?svg=true)](https://ci.appveyor.com/project/MarcusTomlinson/dspatchables/branch/master)
+[![Build Status](https://travis-ci.org/cross-platform/DSPatchables.svg?branch=master)](https://travis-ci.org/cross-platform/DSPatchables)
+[![Build status](https://ci.appveyor.com/api/projects/status/7lixlpl0699oxb73/branch/master?svg=true)](https://ci.appveyor.com/project/cross-platform/dspatchables/branch/master)
 
 # DSPatchables
 DSPatch Component Repository
 
 ```
-git clone https://github.com/MarcusTomlinson/DSPatchables.git
+git clone https://github.com/cross-platform/DSPatchables.git
 cd DSPatchables
 git submodule update --init --recursive --remote
 mkdir build
@@ -21,6 +21,6 @@ DSPatchables is a DSPatch component repository.
 
 *See also:*
 
-DSPatch (https://github.com/MarcusTomlinson/DSPatch): A powerful C++ dataflow framework.
+DSPatch (https://github.com/cross-platform/DSPatch): A powerful C++ dataflow framework.
 
-DSPatcher (https://github.com/MarcusTomlinson/DSPatcher): A cross-platform graphical tool for building DSPatch circuits.
+DSPatcher (https://github.com/cross-platform/DSPatcher): A cross-platform graphical tool for building DSPatch circuits.
