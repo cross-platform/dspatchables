@@ -9,7 +9,7 @@ DSPatch Component Repository
 ## Build
 
 ```
-git clone https://github.com/cross-platform/DSPatchables.git
+git clone https://github.com/cross-platform/dspatchables.git
 cd DSPatchables
 git submodule update --init --recursive --remote
 mkdir build
@@ -24,6 +24,6 @@ make
 
 ### See also:
 
-DSPatch (https://github.com/cross-platform/DSPatch): A powerful C++ dataflow framework.
+DSPatch (https://github.com/cross-platform/dspatch): A powerful C++ dataflow framework.
 
-DSPatcher (https://github.com/cross-platform/DSPatcher): A cross-platform graphical tool for building DSPatch circuits.
+DSPatcher (https://github.com/cross-platform/dspatcher): A cross-platform graphical tool for building DSPatch circuits.

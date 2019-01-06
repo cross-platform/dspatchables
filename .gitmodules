@@ -1,4 +1,4 @@
 [submodule "DSPatch"]
 	path = DSPatch
-	url = https://github.com/cross-platform/DSPatch.git
+	url = https://github.com/cross-platform/dspatch.git
 	branch = master
