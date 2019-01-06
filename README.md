@@ -6,7 +6,8 @@
 DSPatch Component Repository
 
 
-Building DSPatchables:
+## Build
+
 ```
 git clone https://github.com/cross-platform/DSPatchables.git
 cd DSPatchables
@@ -21,9 +22,7 @@ make
 - *When building for an IDE, instead of `make`, simply open the cmake generated project file.*
 
 
-DSPatchables is a DSPatch component repository.
-
-*See also:*
+### See also:
 
 DSPatch (https://github.com/cross-platform/DSPatch): A powerful C++ dataflow framework.
 
