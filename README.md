@@ -10,7 +10,7 @@ DSPatch Component Repository
 
 ```
 git clone https://github.com/cross-platform/dspatchables.git
-cd DSPatchables
+cd dspatchables
 git submodule update --init --recursive --remote
 mkdir build
 cd build
