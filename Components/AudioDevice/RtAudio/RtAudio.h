@@ -621,6 +621,7 @@ class RTAUDIO_DLL_PUBLIC RtAudio
   #endif
   #include <windows.h>
   #include <process.h>
+  #include <stdint.h>
 
   typedef uintptr_t ThreadHandle;
   typedef CRITICAL_SECTION StreamMutex;
@@ -689,7 +690,6 @@ class S24 {
     return *this;
   }
 
-  S24( const S24& v ) { *this = v; }
   S24( const double& d ) { *this = (int) d; }
   S24( const float& f ) { *this = (int) f; }
   S24( const signed short& s ) { *this = (int) s; }

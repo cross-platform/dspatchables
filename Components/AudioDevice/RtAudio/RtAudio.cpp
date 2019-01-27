@@ -1541,6 +1541,10 @@ void RtApiCore :: startStream( void )
     return;
   }
 
+  #if defined( HAVE_GETTIMEOFDAY )
+  gettimeofday( &stream_.lastTickTimestamp, NULL );
+  #endif
+
   OSStatus result = noErr;
   CoreHandle *handle = (CoreHandle *) stream_.apiHandle;
   if ( stream_.mode == OUTPUT || stream_.mode == DUPLEX ) {
@@ -2499,6 +2503,10 @@ void RtApiJack :: startStream( void )
     return;
   }
 
+  #if defined( HAVE_GETTIMEOFDAY )
+  gettimeofday( &stream_.lastTickTimestamp, NULL );
+  #endif
+
   JackHandle *handle = (JackHandle *) stream_.apiHandle;
   int result = jack_activate( handle->client );
   if ( result ) {
@@ -3378,6 +3386,10 @@ void RtApiAsio :: startStream()
     return;
   }
 
+  #if defined( HAVE_GETTIMEOFDAY )
+  gettimeofday( &stream_.lastTickTimestamp, NULL );
+  #endif
+
   AsioHandle *handle = (AsioHandle *) stream_.apiHandle;
   ASIOError result = ASIOStart();
   if ( result != ASE_OK ) {
@@ -3830,7 +3842,7 @@ public:
     }
 
     // "in" index can end on the "out" index but cannot begin at it
-    if ( inIndex_ <= relOutIndex && inIndexEnd > relOutIndex ) {
+    if ( inIndex_ < relOutIndex && inIndexEnd > relOutIndex ) {
       return false; // not enough space between "in" index and "out" index
     }
 
@@ -3891,7 +3903,7 @@ public:
     }
 
     // "out" index can begin at and end on the "in" index
-    if ( outIndex_ < relInIndex && outIndexEnd > relInIndex ) {
+    if ( outIndex_ <= relInIndex && outIndexEnd > relInIndex ) {
       return false; // not enough space between "out" index and "in" index
     }
 
@@ -4551,6 +4563,10 @@ void RtApiWasapi::startStream( void )
     return;
   }
 
+  #if defined( HAVE_GETTIMEOFDAY )
+  gettimeofday( &stream_.lastTickTimestamp, NULL );
+  #endif
+
   // update stream state
   stream_.state = STREAM_RUNNING;
 
@@ -4590,26 +4606,6 @@ void RtApiWasapi::stopStream( void )
   // Wait for the last buffer to play before stopping.
   Sleep( 1000 * stream_.bufferSize / stream_.sampleRate );
 
-  // stop capture client if applicable
-  if ( ( ( WasapiHandle* ) stream_.apiHandle )->captureAudioClient ) {
-    HRESULT hr = ( ( WasapiHandle* ) stream_.apiHandle )->captureAudioClient->Stop();
-    if ( FAILED( hr ) ) {
-      errorText_ = "RtApiWasapi::stopStream: Unable to stop capture stream.";
-      error( RtAudioError::DRIVER_ERROR );
-      return;
-    }
-  }
-
-  // stop render client if applicable
-  if ( ( ( WasapiHandle* ) stream_.apiHandle )->renderAudioClient ) {
-    HRESULT hr = ( ( WasapiHandle* ) stream_.apiHandle )->renderAudioClient->Stop();
-    if ( FAILED( hr ) ) {
-      errorText_ = "RtApiWasapi::stopStream: Unable to stop render stream.";
-      error( RtAudioError::DRIVER_ERROR );
-      return;
-    }
-  }
-
   // close thread handle
   if ( stream_.callbackInfo.thread && !CloseHandle( ( void* ) stream_.callbackInfo.thread ) ) {
     errorText_ = "RtApiWasapi::stopStream: Unable to close callback thread.";
@@ -4638,26 +4634,6 @@ void RtApiWasapi::abortStream( void )
   // wait until stream thread is stopped
   while ( stream_.state != STREAM_STOPPED ) {
     Sleep( 1 );
-  }
-
-  // stop capture client if applicable
-  if ( ( ( WasapiHandle* ) stream_.apiHandle )->captureAudioClient ) {
-    HRESULT hr = ( ( WasapiHandle* ) stream_.apiHandle )->captureAudioClient->Stop();
-    if ( FAILED( hr ) ) {
-      errorText_ = "RtApiWasapi::abortStream: Unable to stop capture stream.";
-      error( RtAudioError::DRIVER_ERROR );
-      return;
-    }
-  }
-
-  // stop render client if applicable
-  if ( ( ( WasapiHandle* ) stream_.apiHandle )->renderAudioClient ) {
-    HRESULT hr = ( ( WasapiHandle* ) stream_.apiHandle )->renderAudioClient->Stop();
-    if ( FAILED( hr ) ) {
-      errorText_ = "RtApiWasapi::abortStream: Unable to stop render stream.";
-      error( RtAudioError::DRIVER_ERROR );
-      return;
-    }
   }
 
   // close thread handle
@@ -4981,7 +4957,8 @@ void RtApiWasapi::wasapiThread()
   HMODULE AvrtDll = LoadLibrary( (LPCTSTR) "AVRT.dll" );
   if ( AvrtDll ) {
     DWORD taskIndex = 0;
-    TAvSetMmThreadCharacteristicsPtr AvSetMmThreadCharacteristicsPtr = ( TAvSetMmThreadCharacteristicsPtr ) GetProcAddress( AvrtDll, "AvSetMmThreadCharacteristicsW" );
+    TAvSetMmThreadCharacteristicsPtr AvSetMmThreadCharacteristicsPtr =
+      ( TAvSetMmThreadCharacteristicsPtr ) (void(*)()) GetProcAddress( AvrtDll, "AvSetMmThreadCharacteristicsW" );
     AvSetMmThreadCharacteristicsPtr( L"Pro Audio", &taskIndex );
     FreeLibrary( AvrtDll );
   }
@@ -5041,6 +5018,20 @@ void RtApiWasapi::wasapiThread()
       }
 
       ( ( WasapiHandle* ) stream_.apiHandle )->captureClient = captureClient;
+
+      // reset the capture stream
+      hr = captureAudioClient->Reset();
+      if ( FAILED( hr ) ) {
+        errorText = "RtApiWasapi::wasapiThread: Unable to reset capture stream.";
+        goto Exit;
+      }
+
+      // start the capture stream
+      hr = captureAudioClient->Start();
+      if ( FAILED( hr ) ) {
+        errorText = "RtApiWasapi::wasapiThread: Unable to start capture stream.";
+        goto Exit;
+      }
     }
 
     unsigned int inBufferSize = 0;
@@ -5056,20 +5047,6 @@ void RtApiWasapi::wasapiThread()
 
     // set captureBuffer size
     captureBuffer.setBufferSize( inBufferSize + outBufferSize, formatBytes( stream_.deviceFormat[INPUT] ) );
-
-    // reset the capture stream
-    hr = captureAudioClient->Reset();
-    if ( FAILED( hr ) ) {
-      errorText = "RtApiWasapi::wasapiThread: Unable to reset capture stream.";
-      goto Exit;
-    }
-
-    // start the capture stream
-    hr = captureAudioClient->Start();
-    if ( FAILED( hr ) ) {
-      errorText = "RtApiWasapi::wasapiThread: Unable to start capture stream.";
-      goto Exit;
-    }
   }
 
   // start render stream if applicable
@@ -5122,6 +5099,20 @@ void RtApiWasapi::wasapiThread()
 
       ( ( WasapiHandle* ) stream_.apiHandle )->renderClient = renderClient;
       ( ( WasapiHandle* ) stream_.apiHandle )->renderEvent = renderEvent;
+
+      // reset the render stream
+      hr = renderAudioClient->Reset();
+      if ( FAILED( hr ) ) {
+        errorText = "RtApiWasapi::wasapiThread: Unable to reset render stream.";
+        goto Exit;
+      }
+
+      // start the render stream
+      hr = renderAudioClient->Start();
+      if ( FAILED( hr ) ) {
+        errorText = "RtApiWasapi::wasapiThread: Unable to start render stream.";
+        goto Exit;
+      }
     }
 
     unsigned int outBufferSize = 0;
@@ -5137,20 +5128,6 @@ void RtApiWasapi::wasapiThread()
 
     // set renderBuffer size
     renderBuffer.setBufferSize( inBufferSize + outBufferSize, formatBytes( stream_.deviceFormat[OUTPUT] ) );
-
-    // reset the render stream
-    hr = renderAudioClient->Reset();
-    if ( FAILED( hr ) ) {
-      errorText = "RtApiWasapi::wasapiThread: Unable to reset render stream.";
-      goto Exit;
-    }
-
-    // start the render stream
-    hr = renderAudioClient->Start();
-    if ( FAILED( hr ) ) {
-      errorText = "RtApiWasapi::wasapiThread: Unable to start render stream.";
-      goto Exit;
-    }
   }
 
   // malloc buffer memory
@@ -5174,8 +5151,8 @@ void RtApiWasapi::wasapiThread()
   }
 
   convBuffSize *= 2; // allow overflow for *SrRatio remainders
-  convBuffer = ( char* ) malloc( convBuffSize );
-  stream_.deviceBuffer = ( char* ) malloc( deviceBuffSize );
+  convBuffer = ( char* ) calloc( convBuffSize, 1 );
+  stream_.deviceBuffer = ( char* ) calloc( deviceBuffSize, 1 );
   if ( !convBuffer || !stream_.deviceBuffer ) {
     errorType = RtAudioError::MEMORY_ERROR;
     errorText = "RtApiWasapi::wasapiThread: Error allocating device buffer memory.";
@@ -6391,6 +6368,10 @@ void RtApiDs :: startStream()
     error( RtAudioError::WARNING );
     return;
   }
+
+  #if defined( HAVE_GETTIMEOFDAY )
+  gettimeofday( &stream_.lastTickTimestamp, NULL );
+  #endif
 
   DsHandle *handle = (DsHandle *) stream_.apiHandle;
 
@@ -8084,6 +8065,10 @@ void RtApiAlsa :: startStream()
 
   MUTEX_LOCK( &stream_.mutex );
 
+  #if defined( HAVE_GETTIMEOFDAY )
+  gettimeofday( &stream_.lastTickTimestamp, NULL );
+  #endif
+
   int result = 0;
   snd_pcm_state_t state;
   AlsaHandle *apiInfo = (AlsaHandle *) stream_.apiHandle;
@@ -8654,6 +8639,10 @@ void RtApiPulse::startStream( void )
   }
 
   MUTEX_LOCK( &stream_.mutex );
+
+  #if defined( HAVE_GETTIMEOFDAY )
+  gettimeofday( &stream_.lastTickTimestamp, NULL );
+  #endif
 
   stream_.state = STREAM_RUNNING;
 
@@ -9638,6 +9627,10 @@ void RtApiOss :: startStream()
   }
 
   MUTEX_LOCK( &stream_.mutex );
+
+  #if defined( HAVE_GETTIMEOFDAY )
+  gettimeofday( &stream_.lastTickTimestamp, NULL );
+  #endif
 
   stream_.state = STREAM_RUNNING;
 
