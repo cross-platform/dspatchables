@@ -3841,8 +3841,9 @@ public:
       relOutIndex += bufferSize_;
     }
 
-    // "in" index can end on the "out" index but cannot begin at it
-    if ( inIndex_ < relOutIndex && inIndexEnd > relOutIndex ) {
+    // the "IN" index CAN BEGIN at the "OUT" index
+    // the "IN" index CANNOT END at the "OUT" index
+    if ( inIndex_ < relOutIndex && inIndexEnd >= relOutIndex ) {
       return false; // not enough space between "in" index and "out" index
     }
 
@@ -3902,7 +3903,8 @@ public:
       relInIndex += bufferSize_;
     }
 
-    // "out" index can begin at and end on the "in" index
+    // the "OUT" index CANNOT BEGIN at the "IN" index
+    // the "OUT" index CAN END at the "IN" index
     if ( outIndex_ <= relInIndex && outIndexEnd > relInIndex ) {
       return false; // not enough space between "out" index and "in" index
     }
@@ -5239,6 +5241,9 @@ void RtApiWasapi::wasapiThread()
                                    captureFlags & AUDCLNT_BUFFERFLAGS_DATA_DISCONTINUITY ? RTAUDIO_INPUT_OVERFLOW : 0,
                                    stream_.callbackInfo.userData );
 
+        // tick stream time
+        RtApi::tickStreamTime();
+
         // Handle return value from callback
         if ( callbackResult == 1 ) {
           // instantiate a thread to stop this thread
@@ -5447,9 +5452,6 @@ void RtApiWasapi::wasapiThread()
       // unsetting the callbackPulled flag lets the stream know that
       // the audio device is ready for another callback output buffer.
       callbackPulled = false;
-
-      // tick stream time
-      RtApi::tickStreamTime();
     }
 
   }
@@ -7140,7 +7142,7 @@ unsigned int RtApiAlsa :: getDeviceCount( void )
   unsigned nDevices = 0;
   int result, subdevice, card;
   char name[64];
-  snd_ctl_t *handle;
+  snd_ctl_t *handle = 0;
 
   // Count cards and devices
   card = -1;
@@ -7149,6 +7151,7 @@ unsigned int RtApiAlsa :: getDeviceCount( void )
     sprintf( name, "hw:%d", card );
     result = snd_ctl_open( &handle, name, 0 );
     if ( result < 0 ) {
+      handle = 0;
       errorStream_ << "RtApiAlsa::getDeviceCount: control open, card = " << card << ", " << snd_strerror( result ) << ".";
       errorText_ = errorStream_.str();
       error( RtAudioError::WARNING );
@@ -7168,7 +7171,8 @@ unsigned int RtApiAlsa :: getDeviceCount( void )
       nDevices++;
     }
   nextcard:
-    snd_ctl_close( handle );
+    if ( handle )
+        snd_ctl_close( handle );
     snd_card_next( &card );
   }
 
@@ -7189,7 +7193,7 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
   unsigned nDevices = 0;
   int result, subdevice, card;
   char name[64];
-  snd_ctl_t *chandle;
+  snd_ctl_t *chandle = 0;
 
   // Count cards and devices
   card = -1;
@@ -7199,6 +7203,7 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
     sprintf( name, "hw:%d", card );
     result = snd_ctl_open( &chandle, name, SND_CTL_NONBLOCK );
     if ( result < 0 ) {
+      chandle = 0;
       errorStream_ << "RtApiAlsa::getDeviceInfo: control open, card = " << card << ", " << snd_strerror( result ) << ".";
       errorText_ = errorStream_.str();
       error( RtAudioError::WARNING );
@@ -7221,7 +7226,8 @@ RtAudio::DeviceInfo RtApiAlsa :: getDeviceInfo( unsigned int device )
       nDevices++;
     }
   nextcard:
-    snd_ctl_close( chandle );
+    if ( chandle )
+        snd_ctl_close( chandle );
     snd_card_next( &card );
   }
 
