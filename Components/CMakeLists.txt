@@ -1,6 +1,7 @@
 add_subdirectory(Adder)
 add_subdirectory(AudioDevice)
 add_subdirectory(Gain)
+add_subdirectory(InOut)
 add_subdirectory(Oscillator)
 add_subdirectory(WaveReader)
 add_subdirectory(WaveWriter)

@@ -36,7 +36,7 @@ namespace internal
 class Oscillator;
 }
 
-class Oscillator final : public Component
+class DLLEXPORT Oscillator final : public Component
 {
 public:
     Oscillator( float startFreq, float startAmpl );

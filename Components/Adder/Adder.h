@@ -36,7 +36,7 @@ namespace internal
 class Adder;
 }
 
-class Adder final : public Component
+class DLLEXPORT Adder final : public Component
 {
 public:
     Adder();

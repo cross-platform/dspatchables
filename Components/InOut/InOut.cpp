@@ -22,36 +22,68 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 ************************************************************************/
 
-#pragma once
+#include <InOut.h>
 
-#include <DSPatch.h>
+using namespace DSPatch;
+using namespace DSPatchables;
 
 namespace DSPatch
 {
 namespace DSPatchables
 {
-
 namespace internal
 {
-class Gain;
-}
-
-class DLLEXPORT Gain final : public Component
+class InOut
 {
 public:
-    Gain( float initGain );
+    InOut( int inCount, int outCount )
+        : inCount( inCount )
+        , outCount( outCount )
+    {
+    }
 
-    void SetGain( float gain );
-    float GetGain() const;
-
-protected:
-    virtual void Process_( SignalBus const& inputs, SignalBus& outputs ) override;
-
-private:
-    std::unique_ptr<internal::Gain> p;
+    int inCount = 0;
+    int outCount = 0;
 };
-
-EXPORT_PLUGIN( Gain, 0.5f )
-
+}  // namespace internal
 }  // namespace DSPatchables
 }  // namespace DSPatch
+
+InOut::InOut( int inCount, int outCount )
+    : p( new internal::InOut( inCount, outCount ) )
+{
+    _inputValues.resize( inCount );
+    SetInputCount_( inCount );
+
+    _outputValues.resize( outCount );
+    SetOutputCount_( outCount );
+}
+
+InOut::~InOut()
+{
+}
+
+void InOut::Process_( SignalBus const& inputs, SignalBus& outputs )
+{
+    std::lock_guard<std::mutex> lock( _mutex );
+
+    for ( int i = 0; i < p->inCount; ++i )
+    {
+        // put component inputs into _inputValues
+
+        auto s = std::make_shared<Signal>();
+        s->MoveSignal( inputs.GetSignal( i ) );
+        _inputValues[i].push( s );
+    }
+
+    for ( int i = 0; i < p->outCount; ++i )
+    {
+        // put _outputValues into component outputs
+
+        if ( !_outputValues[i].empty() )
+        {
+            outputs.MoveSignal( i, _outputValues[i].front() );
+            _outputValues[i].pop();
+        }
+    }
+}
