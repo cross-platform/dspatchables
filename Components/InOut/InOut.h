@@ -39,7 +39,7 @@ namespace internal
 class InOut;
 }
 
-class DLLEXPORT InOut : public Component
+class DLLEXPORT InOut final : public Component
 {
 public:
     InOut( int inCount, int outCount );
