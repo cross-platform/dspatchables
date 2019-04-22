@@ -68,7 +68,7 @@ bool InOut::PushOutput( int index, ValueType const& value )
 {
     std::lock_guard<std::mutex> lock( _mutex );
 
-    if ( index < _outputValues.size() )
+    if ( (size_t)index < _outputValues.size() )
     {
         auto signal = std::make_shared<Signal>();
         signal->SetValue( value );
@@ -85,7 +85,7 @@ std::unique_ptr<ValueType> InOut::PopInput( int index )
 {
     std::lock_guard<std::mutex> lock( _mutex );
 
-    if ( index < _inputValues.size() && !_inputValues[index].empty() )
+    if ( (size_t)index < _inputValues.size() && !_inputValues[index].empty() )
     {
         auto signal = _inputValues[index].front();
         _inputValues[index].pop();
