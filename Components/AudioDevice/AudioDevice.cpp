@@ -525,7 +525,10 @@ void DSPatchables::internal::AudioDevice::StartStream()
     }
 
     RtAudio::StreamOptions options;
+#ifdef NDEBUG
     options.flags |= RTAUDIO_SCHEDULE_REALTIME;
+#endif
+    options.flags |= RTAUDIO_MINIMIZE_LATENCY;
     options.flags |= RTAUDIO_NONINTERLEAVED;
 
     audioStream.openStream( outParams, inParams, RTAUDIO_SINT16, sampleRate, (unsigned int*)&bufferSize, &StaticCallback, this,
