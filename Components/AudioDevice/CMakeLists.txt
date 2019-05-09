@@ -32,19 +32,18 @@ if(WIN32)
     )
 endif(WIN32)
 
-# Definition for RtAudio Linux, using PulseAudio
+# Definition for RtAudio Linux, using ALSA
 if(UNIX AND NOT APPLE)
-    add_definitions(-D__LINUX_PULSE__)
+    add_definitions(-D__LINUX_ALSA__)
 
-    find_library(PULSEAUDIO pulse pulse-simple)
-    if(NOT PULSEAUDIO)
-        message(FATAL_ERROR "PulseAudio not found (Ensure that libpulse-dev is installed)")
+    find_library(ASOUND asound)
+    if(NOT ASOUND)
+        message(FATAL_ERROR "ALSA not found (Ensure that libasound2-dev is installed)")
     endif()
 
     target_link_libraries(
         ${PROJECT_NAME}
-        pulse
-        pulse-simple
+        ${ASOUND}
     )
 endif(UNIX AND NOT APPLE)
 
