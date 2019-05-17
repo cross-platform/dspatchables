@@ -28,7 +28,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #include <fstream>
 #include <iostream>
 
-const int c_bufferSize = 441;  // Process 10ms chunks of data @ 44100Hz
+const int c_bufferSize = 440;  // Process 10ms chunks of data @ 44100Hz
 
 using namespace DSPatch;
 using namespace DSPatchables;
