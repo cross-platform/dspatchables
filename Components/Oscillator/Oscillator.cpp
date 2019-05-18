@@ -75,7 +75,7 @@ public:
 Oscillator::Oscillator( float startFreq, float startAmpl )
     : p( new internal::Oscillator( startFreq, startAmpl ) )
 {
-    SetInputCount_( 2, {"samplerate", "buffersize"} );
+    SetInputCount_( 1, {"freq (x1000)"} );
     SetOutputCount_( 1, {"out"} );
 }
 
@@ -133,26 +133,10 @@ float Oscillator::GetFreq() const
 
 void Oscillator::Process_( SignalBus const& inputs, SignalBus& outputs )
 {
-    // Synchronise sample rate with the "Sample Rate" input feed
-    // =========================================================
-    auto sampleRate = inputs.GetValue<int>( 0 );
-    if ( sampleRate )
+    auto freq = inputs.GetValue<float>( 0 );
+    if ( freq && *freq != 0.0f )
     {
-        if ( *sampleRate != GetSampleRate() )
-        {
-            SetSampleRate( *sampleRate );
-        }
-    }
-
-    // Synchronise buffer size with the size of incoming buffers
-    // =========================================================
-    auto buffer = inputs.GetValue<std::vector<short>>( 1 );
-    if ( buffer )
-    {
-        if ( GetBufferSize() != (int)buffer->size() )
-        {
-            SetBufferSize( buffer->size() );
-        }
+        SetFreq( *freq * 1000 );
     }
 
     std::lock_guard<std::mutex> lock( p->processMutex );

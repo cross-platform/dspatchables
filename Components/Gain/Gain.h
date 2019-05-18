@@ -51,7 +51,7 @@ private:
     std::unique_ptr<internal::Gain> p;
 };
 
-EXPORT_PLUGIN( Gain, 0.5f )
+EXPORT_PLUGIN( Gain, 1.0f )
 
 }  // namespace DSPatchables
 }  // namespace DSPatch
