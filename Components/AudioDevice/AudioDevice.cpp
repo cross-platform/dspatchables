@@ -38,7 +38,7 @@ const int c_sampleRate = 44100;
 const int c_bufferSize = 440;  // Process 10ms chunks of data @ 44100Hz
 
 const int c_bufferWaitTimeoutMs = 500;  // Wait a max of 500ms for the sound card to respond
-const int c_syncWaitTimeoutS = 2;       // Wait a mx of 2s for the Process_() method to respond
+const int c_syncWaitTimeoutS = 2;       // Wait a max of 2s for the Process_() method to respond
 
 using namespace DSPatch;
 using namespace DSPatchables;
