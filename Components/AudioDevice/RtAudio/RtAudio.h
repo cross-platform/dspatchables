@@ -7,10 +7,11 @@
     and OSS), Macintosh OS X (CoreAudio and Jack), and Windows
     (DirectSound, ASIO and WASAPI) operating systems.
 
+    RtAudio GitHub site: https://github.com/thestk/rtaudio
     RtAudio WWW site: http://www.music.mcgill.ca/~gary/rtaudio/
 
     RtAudio: realtime audio i/o C++ classes
-    Copyright (c) 2001-2017 Gary P. Scavone
+    Copyright (c) 2001-2019 Gary P. Scavone
 
     Permission is hereby granted, free of charge, to any person
     obtaining a copy of this software and associated documentation files
@@ -45,7 +46,7 @@
 #ifndef __RTAUDIO_H
 #define __RTAUDIO_H
 
-#define RTAUDIO_VERSION "5.0.0"
+#define RTAUDIO_VERSION "5.1.0"
 
 #if defined _WIN32 || defined __CYGWIN__
   #if defined(RTAUDIO_EXPORT)
@@ -193,6 +194,7 @@ static const RtAudioStreamStatus RTAUDIO_OUTPUT_UNDERFLOW = 0x2;  // The output 
    \param userData A pointer to optional data provided by the client
           when opening the stream (default = NULL).
 
+   \return
    To continue normal stream operation, the RtAudioCallback function
    should return a value of zero.  To stop the stream and drain the
    output buffer, the function should return a value of one.  To abort
