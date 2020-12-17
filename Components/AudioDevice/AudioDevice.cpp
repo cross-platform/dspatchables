@@ -185,6 +185,14 @@ bool AudioDevice::Available()
         if ( p->hasInputs && !p->notFoundNotified )
         {
             int defaultInputDevice = GetDefaultInputDevice();
+            for ( int i = 0; i < GetDeviceCount(); ++i )
+            {
+                if ( GetDeviceInputCount( i ) > 0 && GetDeviceOutputCount( i ) > 0 )
+                {
+                    defaultInputDevice = i;
+                    break;
+                }
+            }
             if ( GetCurrentDevice() != defaultInputDevice )
             {
                 p->notFoundNotified = true;
@@ -200,6 +208,14 @@ bool AudioDevice::Available()
         else if ( !p->hasInputs && !p->notFoundNotified )
         {
             int defaultOutputDevice = GetDefaultOutputDevice();
+            for ( int i = 0; i < GetDeviceCount(); ++i )
+            {
+                if ( GetDeviceInputCount( i ) > 0 && GetDeviceOutputCount( i ) > 0 )
+                {
+                    defaultOutputDevice = i;
+                    break;
+                }
+            }
             if ( GetCurrentDevice() != defaultOutputDevice )
             {
                 p->notFoundNotified = true;
