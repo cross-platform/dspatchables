@@ -27,9 +27,7 @@ extern "C"
 static void fn(struct mg_connection *c, int ev, void *ev_data, void *) {
   if (ev == MG_EV_HTTP_MSG) {
     struct mg_http_message *hm = (struct mg_http_message *) ev_data;
-    if (mg_http_match_uri(hm, "/websocket")) {
-      mg_ws_upgrade(c, hm, NULL);
-    }
+    mg_ws_upgrade(c, hm, NULL);
   } else if (ev == MG_EV_WS_MSG) {
     struct mg_ws_message *wm = (struct mg_ws_message *) ev_data;
     mg_ws_send(c, wm->data.ptr, wm->data.len, WEBSOCKET_OP_TEXT);
@@ -53,7 +51,7 @@ public:
     SocketOut()
     {
         mg_mgr_init(&mgr);
-        c = mg_http_listen(&mgr, "wp://localhost:8000", fn, NULL);
+        mg_http_listen(&mgr, "wp://localhost:8000", fn, NULL);
     }
 
     ~SocketOut()
@@ -62,7 +60,6 @@ public:
     }
 
     struct mg_mgr mgr;
-    struct mg_connection *c;
 };
 
 }  // namespace internal

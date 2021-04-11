@@ -56,7 +56,7 @@ public:
     SocketIn()
     {
         mg_mgr_init(&mgr);
-        c = mg_ws_connect(&mgr, "wp://localhost:8000/websocket", fn, NULL, NULL);
+        mg_ws_connect(&mgr, "wp://localhost:8000", fn, NULL, NULL);
     }
 
     ~SocketIn()
@@ -65,7 +65,6 @@ public:
     }
 
     struct mg_mgr mgr;
-    struct mg_connection *c;
 };
 
 }  // namespace internal
