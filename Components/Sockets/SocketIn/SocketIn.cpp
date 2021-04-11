@@ -27,6 +27,31 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
 #include <SocketIn.h>
+#include <thread>
+
+extern "C"
+{
+#include <mongoose.h>
+}
+
+// Print websocket response and signal that we're done
+static void fn(struct mg_connection *c, int ev, void *ev_data, void *) {
+  if (ev == MG_EV_ERROR) {
+    // On error, log error message
+    LOG(LL_ERROR, ("%p %s", c->fd, (char *) ev_data));
+  } else if (ev == MG_EV_WS_OPEN) {
+    // When websocket handshake is successful, send message
+    mg_ws_send(c, "hello", 5, WEBSOCKET_OP_TEXT);
+  } else if (ev == MG_EV_WS_MSG) {
+    // When we get echo response, print it
+    struct mg_ws_message *wm = (struct mg_ws_message *) ev_data;
+    printf("GOT ECHO REPLY: [%.*s]\n", (int) wm->data.len, wm->data.ptr);
+  }
+
+  if (ev == MG_EV_ERROR || ev == MG_EV_CLOSE || ev == MG_EV_WS_MSG) {
+      printf("DONE\n");
+  }
+}
 
 using namespace DSPatch;
 using namespace DSPatchables;
@@ -44,9 +69,20 @@ public:
     SocketIn( float initGain )
     {
         gain = initGain;
+
+        mg_mgr_init(&mgr);        // Initialise event manager
+        c = mg_ws_connect(&mgr, "wp://localhost:8000/websocket", fn, NULL, NULL);     // Create client
+    }
+
+    ~SocketIn()
+    {
+        mg_mgr_free(&mgr);                                   // Deallocate resources
     }
 
     float gain;
+    struct mg_mgr mgr;        // Event manager
+    struct mg_connection *c;  // Client connection
+    std::mutex m;
 };
 
 }  // namespace internal
@@ -73,6 +109,10 @@ float SocketIn::GetGain() const
 
 void SocketIn::Process_( SignalBus const& inputs, SignalBus& outputs )
 {
+    p->m.lock();
+    mg_mgr_poll(&p->mgr, 0);  // Wait for echo
+    p->m.unlock();
+
     auto in = inputs.GetValue<std::vector<short>>( 0 );
     if ( !in )
     {

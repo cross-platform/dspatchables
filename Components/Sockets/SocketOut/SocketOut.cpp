@@ -27,6 +27,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
 #include <SocketOut.h>
+#include <thread>
 
 extern "C"
 {
@@ -66,8 +67,9 @@ public:
     SocketOut( float initGain )
     {
         gain = initGain;
+
         mg_mgr_init(&mgr);                            // Initialise event manager
-        mg_http_listen(&mgr, "http://localhost:8000", fn, NULL);  // Create HTTP listener
+        c = mg_http_listen(&mgr, "wp://localhost:8000", fn, NULL);  // Create HTTP listener
     }
 
     ~SocketOut()
@@ -77,6 +79,8 @@ public:
 
     float gain;
     struct mg_mgr mgr;                            // Event manager
+    struct mg_connection *c;  // Server connection
+    std::mutex m;
 };
 
 }  // namespace internal
@@ -103,7 +107,9 @@ float SocketOut::GetGain() const
 
 void SocketOut::Process_( SignalBus const& inputs, SignalBus& outputs )
 {
+    p->m.lock();
     mg_mgr_poll(&p->mgr, 0);
+    p->m.unlock();
 
     auto in = inputs.GetValue<std::vector<short>>( 0 );
     if ( !in )
