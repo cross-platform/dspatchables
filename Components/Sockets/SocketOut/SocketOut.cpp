@@ -28,6 +28,28 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <SocketOut.h>
 
+extern "C"
+{
+#include <mongoose.h>
+}
+
+static void fn(struct mg_connection *c, int ev, void *ev_data, void *fn_data) {
+  if (ev == MG_EV_HTTP_MSG) {
+    struct mg_http_message *hm = (struct mg_http_message *) ev_data;
+    if (mg_http_match_uri(hm, "/websocket")) {
+      // Upgrade to websocket. From now on, a connection is a full-duplex
+      // Websocket connection, which will receive MG_EV_WS_MSG events.
+      mg_ws_upgrade(c, hm, NULL);
+    }
+  } else if (ev == MG_EV_WS_MSG) {
+    // Got websocket frame. Received data is wm->data. Echo it back!
+    struct mg_ws_message *wm = (struct mg_ws_message *) ev_data;
+    mg_ws_send(c, wm->data.ptr, wm->data.len, WEBSOCKET_OP_TEXT);
+    mg_iobuf_delete(&c->recv, c->recv.len);
+  }
+  (void) fn_data;
+}
+
 using namespace DSPatch;
 using namespace DSPatchables;
 
@@ -44,9 +66,17 @@ public:
     SocketOut( float initGain )
     {
         gain = initGain;
+        mg_mgr_init(&mgr);                            // Initialise event manager
+        mg_http_listen(&mgr, "http://localhost:8000", fn, NULL);  // Create HTTP listener
+    }
+
+    ~SocketOut()
+    {
+        mg_mgr_free(&mgr);
     }
 
     float gain;
+    struct mg_mgr mgr;                            // Event manager
 };
 
 }  // namespace internal
@@ -73,6 +103,8 @@ float SocketOut::GetGain() const
 
 void SocketOut::Process_( SignalBus const& inputs, SignalBus& outputs )
 {
+    mg_mgr_poll(&p->mgr, 0);
+
     auto in = inputs.GetValue<std::vector<short>>( 0 );
     if ( !in )
     {
