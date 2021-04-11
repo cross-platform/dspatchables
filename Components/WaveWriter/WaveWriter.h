@@ -1,5 +1,5 @@
 /******************************************************************************
-DSPatchables - DSPatch Component Repository
+WaveWriter DSPatch Component
 Copyright (c) 2021, Marcus Tomlinson
 
 BSD 2-Clause License

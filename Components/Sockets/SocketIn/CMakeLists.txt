@@ -17,7 +17,7 @@ add_library(
 target_link_libraries(
     ${PROJECT_NAME}
     DSPatch
-    SocketsDependencies
+    SocketDependencies
 )
 
 install(TARGETS ${PROJECT_NAME} DESTINATION lib/dspatch/components)

@@ -1,4 +1,4 @@
-project(SocketsDependencies)
+project(SocketDependencies)
 
 add_library(
     ${PROJECT_NAME}
