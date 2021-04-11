@@ -34,10 +34,7 @@ class SocketOut;
 class DLLEXPORT SocketOut final : public Component
 {
 public:
-    SocketOut( float initGain );
-
-    void SetGain( float gain );
-    float GetGain() const;
+    SocketOut();
 
 protected:
     virtual void Process_( SignalBus const& inputs, SignalBus& outputs ) override;
@@ -46,7 +43,7 @@ private:
     std::unique_ptr<internal::SocketOut> p;
 };
 
-EXPORT_PLUGIN( SocketOut, 1.0f )
+EXPORT_PLUGIN( SocketOut )
 
 }  // namespace DSPatchables
 }  // namespace DSPatch

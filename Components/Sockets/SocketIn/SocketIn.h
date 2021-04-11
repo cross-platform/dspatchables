@@ -34,10 +34,7 @@ class SocketIn;
 class DLLEXPORT SocketIn final : public Component
 {
 public:
-    SocketIn( float initGain );
-
-    void SetGain( float gain );
-    float GetGain() const;
+    SocketIn();
 
 protected:
     virtual void Process_( SignalBus const& inputs, SignalBus& outputs ) override;
@@ -46,7 +43,7 @@ private:
     std::unique_ptr<internal::SocketIn> p;
 };
 
-EXPORT_PLUGIN( SocketIn, 1.0f )
+EXPORT_PLUGIN( SocketIn )
 
 }  // namespace DSPatchables
 }  // namespace DSPatch

@@ -18,7 +18,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 ******************************************************************************/
 
 #include <SocketOut.h>
-#include <thread>
 
 extern "C"
 {
@@ -51,10 +50,8 @@ namespace internal
 class SocketOut
 {
 public:
-    SocketOut( float initGain )
+    SocketOut()
     {
-        gain = initGain;
-
         mg_mgr_init(&mgr);
         c = mg_http_listen(&mgr, "wp://localhost:8000", fn, NULL);
     }
@@ -64,56 +61,21 @@ public:
         mg_mgr_free(&mgr);
     }
 
-    float gain;
     struct mg_mgr mgr;
     struct mg_connection *c;
-    std::mutex m;
 };
 
 }  // namespace internal
 }  // namespace DSPatchables
 }  // namespace DSPatch
 
-SocketOut::SocketOut( float initGain )
-    : Component( ProcessOrder::OutOfOrder )
-    , p( new internal::SocketOut( initGain ) )
+SocketOut::SocketOut()
+    : p( new internal::SocketOut )
 {
-    SetInputCount_( 2, { "in", "gain" } );
-    SetOutputCount_( 1, { "out" } );
+    SetInputCount_( 1, { "out" } );
 }
 
-void SocketOut::SetGain( float gain )
+void SocketOut::Process_( SignalBus const&, SignalBus& )
 {
-    p->gain = gain;
-}
-
-float SocketOut::GetGain() const
-{
-    return p->gain;
-}
-
-void SocketOut::Process_( SignalBus const& inputs, SignalBus& outputs )
-{
-    p->m.lock();
     mg_mgr_poll(&p->mgr, 0);
-    p->m.unlock();
-
-    auto in = inputs.GetValue<std::vector<short>>( 0 );
-    if ( !in )
-    {
-        return;
-    }
-
-    auto gain = inputs.GetValue<float>( 1 );
-    if ( gain )
-    {
-        p->gain = *gain;
-    }
-
-    for ( auto& inSample : *in )
-    {
-        inSample *= p->gain;  // apply gain sample-by-sample
-    }
-
-    outputs.MoveSignal( 0, inputs.GetSignal( 0 ) );  // move gained input signal to output
 }
