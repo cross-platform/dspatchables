@@ -34,21 +34,17 @@ extern "C"
 #include <mongoose.h>
 }
 
-static void fn(struct mg_connection *c, int ev, void *ev_data, void *fn_data) {
+static void fn(struct mg_connection *c, int ev, void *ev_data, void *) {
   if (ev == MG_EV_HTTP_MSG) {
     struct mg_http_message *hm = (struct mg_http_message *) ev_data;
     if (mg_http_match_uri(hm, "/websocket")) {
-      // Upgrade to websocket. From now on, a connection is a full-duplex
-      // Websocket connection, which will receive MG_EV_WS_MSG events.
       mg_ws_upgrade(c, hm, NULL);
     }
   } else if (ev == MG_EV_WS_MSG) {
-    // Got websocket frame. Received data is wm->data. Echo it back!
     struct mg_ws_message *wm = (struct mg_ws_message *) ev_data;
     mg_ws_send(c, wm->data.ptr, wm->data.len, WEBSOCKET_OP_TEXT);
     mg_iobuf_delete(&c->recv, c->recv.len);
   }
-  (void) fn_data;
 }
 
 using namespace DSPatch;
@@ -68,8 +64,8 @@ public:
     {
         gain = initGain;
 
-        mg_mgr_init(&mgr);                            // Initialise event manager
-        c = mg_http_listen(&mgr, "wp://localhost:8000", fn, NULL);  // Create HTTP listener
+        mg_mgr_init(&mgr);
+        c = mg_http_listen(&mgr, "wp://localhost:8000", fn, NULL);
     }
 
     ~SocketOut()
@@ -78,8 +74,8 @@ public:
     }
 
     float gain;
-    struct mg_mgr mgr;                            // Event manager
-    struct mg_connection *c;  // Server connection
+    struct mg_mgr mgr;
+    struct mg_connection *c;
     std::mutex m;
 };
 
