@@ -24,20 +24,36 @@ extern "C"
 #include <mongoose.h>
 }
 
-static void fn(struct mg_connection *c, int ev, void *ev_data, void *) {
-  if (ev == MG_EV_ERROR) {
-    LOG(LL_ERROR, ("%p %s", c->fd, (char *) ev_data));
-  } else if (ev == MG_EV_WS_OPEN) {
-    mg_ws_send(c, "hello", 5, WEBSOCKET_OP_TEXT);
-  } else if (ev == MG_EV_WS_MSG) {
-    struct mg_ws_message *wm = (struct mg_ws_message *) ev_data;
-    printf("GOT ECHO REPLY: [%.*s]\n", (int) wm->data.len, wm->data.ptr);
-    mg_ws_send(c, "hello", 5, WEBSOCKET_OP_TEXT);
-  }
+static void fn(struct mg_connection *c, int ev, void *ev_data, void * data) {
+    auto buffer = reinterpret_cast<std::vector<short>*>(data);
 
-  if (ev == MG_EV_ERROR || ev == MG_EV_CLOSE || ev == MG_EV_WS_MSG) {
-      printf("DONE\n");
-  }
+    if (ev == MG_EV_ERROR)
+    {
+        LOG(LL_ERROR, ("%p %s", c->fd, (char *) ev_data));
+    }
+    else if (ev == MG_EV_WS_OPEN)
+    {
+        buffer->push_back(0);
+    }
+    else if (ev == MG_EV_CLOSE)
+    {
+        *buffer = std::vector<short>();
+    }
+    else if (ev == MG_EV_WS_MSG)
+    {
+        struct mg_ws_message *wm = (struct mg_ws_message *) ev_data;
+
+        if (wm->data.len != 0)
+        {
+            auto short_data = reinterpret_cast<const short*>(wm->data.ptr);
+
+            *buffer = std::vector<short>();
+            for ( size_t i = 0; i < wm->data.len / 2; ++i )
+            {
+                buffer->push_back(short_data[i]);
+            }
+        }
+    }
 }
 
 using namespace DSPatch;
@@ -56,7 +72,7 @@ public:
     SocketIn()
     {
         mg_mgr_init(&mgr);
-        mg_ws_connect(&mgr, "wp://localhost:8000", fn, NULL, NULL);
+        c = mg_ws_connect(&mgr, "localhost:8000", fn, &buffer, nullptr);
     }
 
     ~SocketIn()
@@ -64,7 +80,20 @@ public:
         mg_mgr_free(&mgr);
     }
 
+    void SetIp(std::string const& newIp)
+    {
+        if (newIp != ip)
+        {
+            ip = newIp;
+            buffer = std::vector<short>();
+            c = mg_ws_connect(&mgr, (ip + ":8000").c_str(), fn, &buffer, nullptr);
+        }
+    }
+
     struct mg_mgr mgr;
+    struct mg_connection *c;
+    std::vector<short> buffer;
+    std::string ip;
 };
 
 }  // namespace internal
@@ -74,10 +103,27 @@ public:
 SocketIn::SocketIn()
     : p( new internal::SocketIn )
 {
+    SetInputCount_( 1, { "socket ip" } );
     SetOutputCount_( 1, { "in" } );
 }
 
-void SocketIn::Process_( SignalBus const&, SignalBus& )
+void SocketIn::Process_( SignalBus const& inputs, SignalBus& outputs )
 {
+    auto ip = inputs.GetValue<std::string>( 0 );
+    if ( ip )
+    {
+        p->SetIp(*ip);
+    }
+
+    if (!p->buffer.empty())
+    {
+        mg_ws_send(p->c, nullptr, 0, WEBSOCKET_OP_BINARY);
+    }
+
     mg_mgr_poll(&p->mgr, 0);
+
+    if (p->buffer.size() > 1)
+    {
+        outputs.SetValue(0, p->buffer);
+    }
 }

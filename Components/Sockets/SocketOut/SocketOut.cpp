@@ -24,15 +24,19 @@ extern "C"
 #include <mongoose.h>
 }
 
-static void fn(struct mg_connection *c, int ev, void *ev_data, void *) {
-  if (ev == MG_EV_HTTP_MSG) {
-    struct mg_http_message *hm = (struct mg_http_message *) ev_data;
-    mg_ws_upgrade(c, hm, NULL);
-  } else if (ev == MG_EV_WS_MSG) {
-    struct mg_ws_message *wm = (struct mg_ws_message *) ev_data;
-    mg_ws_send(c, wm->data.ptr, wm->data.len, WEBSOCKET_OP_TEXT);
-    mg_iobuf_delete(&c->recv, c->recv.len);
-  }
+static void fn(struct mg_connection *c, int ev, void *ev_data, void * data) {
+    auto buffer = reinterpret_cast<std::vector<short>*>(data);
+
+    if (ev == MG_EV_HTTP_MSG)
+    {
+        struct mg_http_message *hm = (struct mg_http_message *) ev_data;
+        mg_ws_upgrade(c, hm, nullptr);
+    }
+    else if (ev == MG_EV_WS_MSG)
+    {
+        mg_ws_send(c, (const char*)&(*buffer)[0], buffer->size() * 2, WEBSOCKET_OP_BINARY);
+        *buffer = std::vector<short>();
+    }
 }
 
 using namespace DSPatch;
@@ -51,7 +55,7 @@ public:
     SocketOut()
     {
         mg_mgr_init(&mgr);
-        mg_http_listen(&mgr, "wp://localhost:8000", fn, NULL);
+        mg_http_listen(&mgr, "localhost:8000", fn, &buffer);
     }
 
     ~SocketOut()
@@ -60,6 +64,7 @@ public:
     }
 
     struct mg_mgr mgr;
+    std::vector<short> buffer;
 };
 
 }  // namespace internal
@@ -72,7 +77,16 @@ SocketOut::SocketOut()
     SetInputCount_( 1, { "out" } );
 }
 
-void SocketOut::Process_( SignalBus const&, SignalBus& )
+void SocketOut::Process_( SignalBus const& inputs, SignalBus& )
 {
-    mg_mgr_poll(&p->mgr, 0);
+    auto in = inputs.GetValue<std::vector<short>>( 0 );
+    if ( in )
+    {
+        p->buffer = *in;
+    }
+
+    while (!p->buffer.empty())
+    {
+        mg_mgr_poll(&p->mgr, 0);
+    }
 }
