@@ -36,6 +36,8 @@ class DLLEXPORT SocketIn final : public Component
 public:
     SocketIn();
 
+    void SetIp(std::string const& newIp);
+
 protected:
     virtual void Process_( SignalBus const& inputs, SignalBus& outputs ) override;
 

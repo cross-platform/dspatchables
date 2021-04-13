@@ -2,11 +2,11 @@ project(SocketIn)
 
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/../Dependencies
+    ${CMAKE_CURRENT_SOURCE_DIR}/../Mongoose
 )
 
-file(GLOB srcs *.cpp)
-file(GLOB hdrs *.h)
+file(GLOB srcs *.cpp ../Mongoose/*.cpp)
+file(GLOB hdrs *.h ../Mongoose/*.h)
 
 add_library(
     ${PROJECT_NAME} SHARED
@@ -17,7 +17,6 @@ add_library(
 target_link_libraries(
     ${PROJECT_NAME}
     DSPatch
-    SocketDependencies
 )
 
 install(TARGETS ${PROJECT_NAME} DESTINATION lib/dspatch/components)

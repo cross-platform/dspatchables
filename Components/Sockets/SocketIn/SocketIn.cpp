@@ -19,10 +19,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include <SocketIn.h>
 
-extern "C"
-{
 #include <mongoose.h>
-}
 
 static void fn(struct mg_connection *c, int ev, void *ev_data, void * data) {
     auto buffer = reinterpret_cast<std::vector<short>*>(data);
@@ -80,16 +77,6 @@ public:
         mg_mgr_free(&mgr);
     }
 
-    void SetIp(std::string const& newIp)
-    {
-        if (newIp != ip)
-        {
-            ip = newIp;
-            buffer = std::vector<short>();
-            c = mg_ws_connect(&mgr, (ip + ":8000").c_str(), fn, &buffer, nullptr);
-        }
-    }
-
     struct mg_mgr mgr;
     struct mg_connection *c;
     std::vector<short> buffer;
@@ -103,8 +90,20 @@ public:
 SocketIn::SocketIn()
     : p( new internal::SocketIn )
 {
-    SetInputCount_( 1, { "socket ip" } );
+    SetInputCount_( 1, { "ip" } );
     SetOutputCount_( 1, { "in" } );
+}
+
+void SocketIn::SetIp(std::string const& newIp)
+{
+    if (newIp != p->ip)
+    {
+        p->ip = newIp;
+        p->buffer = std::vector<short>();
+        mg_mgr_free(&p->mgr);
+        mg_mgr_init(&p->mgr);
+        p->c = mg_ws_connect(&p->mgr, p->ip.c_str(), fn, &p->buffer, nullptr);
+    }
 }
 
 void SocketIn::Process_( SignalBus const& inputs, SignalBus& outputs )
@@ -112,7 +111,7 @@ void SocketIn::Process_( SignalBus const& inputs, SignalBus& outputs )
     auto ip = inputs.GetValue<std::string>( 0 );
     if ( ip )
     {
-        p->SetIp(*ip);
+        SetIp(*ip);
     }
 
     if (!p->buffer.empty())

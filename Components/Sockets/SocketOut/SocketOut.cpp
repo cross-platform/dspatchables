@@ -19,10 +19,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include <SocketOut.h>
 
-extern "C"
-{
 #include <mongoose.h>
-}
+
+#include <thread>
 
 static void fn(struct mg_connection *c, int ev, void *ev_data, void * data) {
     auto buffer = reinterpret_cast<std::vector<short>*>(data);
@@ -55,7 +54,7 @@ public:
     SocketOut()
     {
         mg_mgr_init(&mgr);
-        mg_http_listen(&mgr, "localhost:8000", fn, &buffer);
+        c = mg_http_listen(&mgr, "localhost:8000", fn, &buffer);
     }
 
     ~SocketOut()
@@ -64,7 +63,9 @@ public:
     }
 
     struct mg_mgr mgr;
+    struct mg_connection *c;
     std::vector<short> buffer;
+    std::string ip;
 };
 
 }  // namespace internal
@@ -74,7 +75,19 @@ public:
 SocketOut::SocketOut()
     : p( new internal::SocketOut )
 {
-    SetInputCount_( 1, { "out" } );
+    SetInputCount_( 2, { "out", "ip" } );
+}
+
+void SocketOut::SetIp(std::string const& newIp)
+{
+    if (newIp != p->ip)
+    {
+        p->ip = newIp;
+        p->buffer = std::vector<short>();
+        mg_mgr_free(&p->mgr);
+        mg_mgr_init(&p->mgr);
+        p->c = mg_http_listen(&p->mgr, p->ip.c_str(), fn, &p->buffer);
+    }
 }
 
 void SocketOut::Process_( SignalBus const& inputs, SignalBus& )
@@ -85,8 +98,19 @@ void SocketOut::Process_( SignalBus const& inputs, SignalBus& )
         p->buffer = *in;
     }
 
-    while (!p->buffer.empty())
+    auto ip = inputs.GetValue<std::string>( 1 );
+    if ( ip )
+    {
+        SetIp(*ip);
+    }
+
+    for (int i = 0; i < 50; ++i)
     {
         mg_mgr_poll(&p->mgr, 0);
+        if (p->buffer.empty())
+        {
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 }
