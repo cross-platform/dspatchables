@@ -119,7 +119,7 @@ void SocketIn::Process_( SignalBus const& inputs, SignalBus& outputs )
         mg_ws_send(p->c, nullptr, 0, WEBSOCKET_OP_BINARY);
     }
 
-    mg_mgr_poll(&p->mgr, 0);
+    mg_mgr_poll(&p->mgr, 50);
 
     if (p->buffer.size() > 1)
     {
