@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Web SocketIn</title>
+    </head>
+    <style>
+        .block
+        {
+            display: block;
+            width: 100%;
+            height: 200px;
+            font-size: 50px;
+        }
+    </style>
+    <body>
+        <button type="button" class="block">Connect</button>
+    </body>
+    <script>
+        let time = 0;
+        let channels = 1;
+        let frameCount = 440;
+        let sampleRate = 44100;
+        let bufferLength = channels * (frameCount/sampleRate);
+
+        let AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = new AudioContext();
+
+        let websocket = new WebSocket( 'ws://' + location.hostname + ':8000' );
+
+        function play( data )
+        {
+            let myArrayBuffer = audioCtx.createBuffer(channels, frameCount, sampleRate);
+
+            for (let channel = 0; channel < channels; channel++)
+            {
+                let nowBuffering = myArrayBuffer.getChannelData(channel);
+                for (let i = 0; i < frameCount; i++)
+                {
+                    nowBuffering[i] = data[i] / 32768
+                }
+            }
+
+            let source = audioCtx.createBufferSource();
+            source.buffer = myArrayBuffer;
+            source.connect(audioCtx.destination);
+
+            // triple buffer
+            while (audioCtx.currentTime < (time - bufferLength - bufferLength)) {};
+
+            source.start(time);
+            time += bufferLength;
+
+            websocket.send( '' );
+        }
+
+        websocket.onmessage = (ev) =>
+        {
+            let fr = new FileReader();
+            fr.onload = () => {
+                const array = new Int16Array(fr.result);
+                play( array );
+            };
+            fr.readAsArrayBuffer(ev.data);
+        };
+
+        document.querySelector('button').onclick = () =>
+        {
+            let source = audioCtx.createBufferSource();
+            websocket.send( '' );
+        }
+    </script>
+</html>

@@ -21,8 +21,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include <mongoose.h>
 
-static void fn(struct mg_connection *c, int ev, void *ev_data, void * data) {
-    auto buffer = reinterpret_cast<std::vector<short>*>(data);
+static void fn(mg_connection *c, int ev, void *ev_data, void * data) {
+    auto buffer = (std::vector<short>*) data;
+    auto wm = (mg_ws_message*) ev_data;
 
     if (ev == MG_EV_ERROR)
     {
@@ -38,11 +39,9 @@ static void fn(struct mg_connection *c, int ev, void *ev_data, void * data) {
     }
     else if (ev == MG_EV_WS_MSG)
     {
-        struct mg_ws_message *wm = (struct mg_ws_message *) ev_data;
-
         if (wm->data.len != 0)
         {
-            auto short_data = reinterpret_cast<const short*>(wm->data.ptr);
+            auto short_data = (const short*) wm->data.ptr;
 
             *buffer = std::vector<short>();
             for ( size_t i = 0; i < wm->data.len / 2; ++i )
@@ -77,8 +76,8 @@ public:
         mg_mgr_free(&mgr);
     }
 
-    struct mg_mgr mgr;
-    struct mg_connection *c;
+    mg_mgr mgr;
+    mg_connection *c;
     std::vector<short> buffer;
     std::string ip;
 };
@@ -102,7 +101,7 @@ void SocketIn::SetIp(std::string const& newIp)
         p->buffer = std::vector<short>();
         mg_mgr_free(&p->mgr);
         mg_mgr_init(&p->mgr);
-        p->c = mg_ws_connect(&p->mgr, p->ip.c_str(), fn, &p->buffer, nullptr);
+        p->c = mg_ws_connect(&p->mgr, (p->ip + ":8000").c_str(), fn, &p->buffer, nullptr);
     }
 }
 

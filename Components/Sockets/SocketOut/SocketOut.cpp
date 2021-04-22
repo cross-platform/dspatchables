@@ -22,13 +22,31 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <mongoose.h>
 
 #include <thread>
+#include <iostream>
 
-static void fn(struct mg_connection *c, int ev, void *ev_data, void * data) {
-    auto buffer = reinterpret_cast<std::vector<short>*>(data);
+static void hfn(mg_connection *c, int ev, void *ev_data, void * data) {
+    auto buffer = (std::vector<short>*) data;
+    auto hm = (mg_http_message *) ev_data;
 
     if (ev == MG_EV_HTTP_MSG)
     {
-        struct mg_http_message *hm = (struct mg_http_message *) ev_data;
+        mg_http_serve_opts opts;
+        opts.root_dir = HTML_ROOT;
+        mg_http_serve_dir(c, hm, &opts);
+    }
+    else if (ev == MG_EV_WS_MSG)
+    {
+        mg_ws_send(c, (const char*)&(*buffer)[0], buffer->size() * 2, WEBSOCKET_OP_BINARY);
+        *buffer = std::vector<short>();
+    }
+}
+
+static void fn(mg_connection *c, int ev, void *ev_data, void * data) {
+    auto buffer = (std::vector<short>*) data;
+    auto hm = (mg_http_message *) ev_data;
+
+    if (ev == MG_EV_HTTP_MSG)
+    {
         mg_ws_upgrade(c, hm, nullptr);
     }
     else if (ev == MG_EV_WS_MSG)
@@ -55,6 +73,7 @@ public:
     {
         mg_mgr_init(&mgr);
         c = mg_http_listen(&mgr, "localhost:8000", fn, &buffer);
+        hc = mg_http_listen(&mgr, "localhost:8080", hfn, &buffer);
     }
 
     ~SocketOut()
@@ -62,8 +81,8 @@ public:
         mg_mgr_free(&mgr);
     }
 
-    struct mg_mgr mgr;
-    struct mg_connection *c;
+    mg_mgr mgr;
+    mg_connection *c, *hc;
     std::vector<short> buffer;
     std::string ip;
 };
@@ -86,7 +105,8 @@ void SocketOut::SetIp(std::string const& newIp)
         p->buffer = std::vector<short>();
         mg_mgr_free(&p->mgr);
         mg_mgr_init(&p->mgr);
-        p->c = mg_http_listen(&p->mgr, p->ip.c_str(), fn, &p->buffer);
+        p->c = mg_http_listen(&p->mgr, (p->ip + ":8000").c_str(), fn, &p->buffer);
+        p->hc = mg_http_listen(&p->mgr, (p->ip + ":8080").c_str(), hfn, &p->buffer);
     }
 }
 
