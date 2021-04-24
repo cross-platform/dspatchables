@@ -24,6 +24,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <iostream>
 #include <thread>
 
+const float c_sampleRate = 44100;
+const float c_bufferSize = 440;  // Process 10ms chunks of data @ 44100Hz
+const int c_period = int( ( c_bufferSize / c_sampleRate ) * 1500.0f );
+
 static void hfn( mg_connection* c, int ev, void* ev_data, void* data )
 {
     auto buffer = (std::vector<short>*)data;
@@ -126,7 +130,7 @@ void SocketOut::Process_( SignalBus const& inputs, SignalBus& )
         SetIp( *ip );
     }
 
-    for ( int i = 0; i < 50; ++i )
+    for ( int i = 0; i < c_period; ++i )
     {
         mg_mgr_poll( &p->mgr, 0 );
         if ( p->buffer.empty() )
