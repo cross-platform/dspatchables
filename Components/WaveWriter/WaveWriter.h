@@ -28,6 +28,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
+#include <Constants.h>
 #include <DSPatch.h>
 
 namespace DSPatch
@@ -53,7 +54,7 @@ private:
     std::unique_ptr<internal::WaveWriter> p;
 };
 
-EXPORT_PLUGIN( WaveWriter, "WaveWriter.wav", 2, 16, 44100 )
+EXPORT_PLUGIN( WaveWriter, "WaveWriter.wav", c_channelCount, c_bitsPerSample, c_sampleRate )
 
 }  // namespace DSPatchables
 }  // namespace DSPatch

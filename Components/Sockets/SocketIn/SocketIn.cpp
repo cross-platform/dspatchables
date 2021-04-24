@@ -17,6 +17,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 ******************************************************************************/
 
+#include <Constants.h>
 #include <SocketIn.h>
 
 #include <mongoose.h>
@@ -119,7 +120,7 @@ void SocketIn::Process_( SignalBus const& inputs, SignalBus& outputs )
         mg_ws_send( p->c, nullptr, 0, WEBSOCKET_OP_BINARY );
     }
 
-    mg_mgr_poll( &p->mgr, 50 );
+    mg_mgr_poll( &p->mgr, c_period );
 
     if ( p->buffer.size() > 1 )
     {

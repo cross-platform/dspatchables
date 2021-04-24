@@ -26,13 +26,12 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
+#include <Constants.h>
 #include <WaveReader.h>
 
 #include <cstring>
 #include <fstream>
 #include <iostream>
-
-const int c_bufferSize = 440;  // Process 10ms chunks of data @ 44100Hz
 
 using namespace DSPatch;
 using namespace DSPatchables;

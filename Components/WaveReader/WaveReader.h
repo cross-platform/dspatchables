@@ -52,7 +52,7 @@ private:
     std::unique_ptr<internal::WaveReader> p;
 };
 
-EXPORT_PLUGIN( WaveReader, getenv("WAVEREADER_FILE") ? getenv("WAVEREADER_FILE") : SAMPLE_WAV_FILE )
+EXPORT_PLUGIN( WaveReader, getenv( "WAVEREADER_FILE" ) ? getenv( "WAVEREADER_FILE" ) : SAMPLE_WAV_FILE )
 
 }  // namespace DSPatchables
 }  // namespace DSPatch

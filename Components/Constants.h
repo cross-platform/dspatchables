@@ -1,5 +1,5 @@
 /******************************************************************************
-Gain DSPatch Component
+DSPatchables - DSPatch Component Repository
 Copyright (c) 2021, Marcus Tomlinson
 
 BSD 2-Clause License
@@ -26,69 +26,19 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
-#include <Gain.h>
+#pragma once
 
-using namespace DSPatch;
-using namespace DSPatchables;
+// Common
+const float c_sampleRate = 44100;
+const float c_bufferSize = 440;  // Process 10ms chunks of data @ 44100Hz
 
-namespace DSPatch
-{
-namespace DSPatchables
-{
-namespace internal
-{
+// AudioDevice
+const int c_bufferWaitTimeoutMs = 500;  // Wait a max of 500ms for the sound card to respond
+const int c_syncWaitTimeoutS = 2;       // Wait a max of 2s for the Process_() method to respond
 
-class Gain
-{
-public:
-    Gain( float initGain )
-    {
-        gain = initGain;
-    }
+// Sockets
+const int c_period = int( ( c_bufferSize / c_sampleRate ) * 1500.0f );
 
-    float gain;
-};
-
-}  // namespace internal
-}  // namespace DSPatchables
-}  // namespace DSPatch
-
-Gain::Gain( float initGain )
-    : Component( ProcessOrder::OutOfOrder )
-    , p( new internal::Gain( initGain ) )
-{
-    SetInputCount_( 2, { "in", "gain" } );
-    SetOutputCount_( 1, { "out" } );
-}
-
-void Gain::SetGain( float gain )
-{
-    p->gain = gain;
-}
-
-float Gain::GetGain() const
-{
-    return p->gain;
-}
-
-void Gain::Process_( SignalBus const& inputs, SignalBus& outputs )
-{
-    auto in = inputs.GetValue<std::vector<short>>( 0 );
-    if ( !in )
-    {
-        return;
-    }
-
-    auto gain = inputs.GetValue<float>( 1 );
-    if ( gain )
-    {
-        p->gain = *gain;
-    }
-
-    for ( auto& inSample : *in )
-    {
-        inSample *= p->gain;  // apply gain sample-by-sample
-    }
-
-    outputs.MoveSignal( 0, inputs.GetSignal( 0 ) );  // move gained input signal to output
-}
+// WaveWriter
+const int c_channelCount = 2;
+const int c_bitsPerSample = 16;

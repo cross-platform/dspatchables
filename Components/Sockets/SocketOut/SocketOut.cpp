@@ -17,32 +17,26 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 ******************************************************************************/
 
+#include <Constants.h>
 #include <SocketOut.h>
 
 #include <mongoose.h>
 
-#include <iostream>
 #include <thread>
 
-const float c_sampleRate = 44100;
-const float c_bufferSize = 440;  // Process 10ms chunks of data @ 44100Hz
-const int c_period = int( ( c_bufferSize / c_sampleRate ) * 1500.0f );
-
-static void hfn( mg_connection* c, int ev, void* ev_data, void* data )
+static void hfn( mg_connection* c, int ev, void* ev_data, void* )
 {
-    auto buffer = (std::vector<short>*)data;
     auto hm = (mg_http_message*)ev_data;
 
-    if ( ev == MG_EV_HTTP_MSG )
+    if ( ev == MG_EV_ERROR )
+    {
+        LOG( LL_ERROR, ( "%p %s", c->fd, (char*)ev_data ) );
+    }
+    else if ( ev == MG_EV_HTTP_MSG )
     {
         mg_http_serve_opts opts;
         opts.root_dir = HTML_ROOT;
         mg_http_serve_dir( c, hm, &opts );
-    }
-    else if ( ev == MG_EV_WS_MSG )
-    {
-        mg_ws_send( c, (const char*)&( *buffer )[0], buffer->size() * 2, WEBSOCKET_OP_BINARY );
-        *buffer = std::vector<short>();
     }
 }
 
@@ -51,7 +45,11 @@ static void fn( mg_connection* c, int ev, void* ev_data, void* data )
     auto buffer = (std::vector<short>*)data;
     auto hm = (mg_http_message*)ev_data;
 
-    if ( ev == MG_EV_HTTP_MSG )
+    if ( ev == MG_EV_ERROR )
+    {
+        LOG( LL_ERROR, ( "%p %s", c->fd, (char*)ev_data ) );
+    }
+    else if ( ev == MG_EV_HTTP_MSG )
     {
         mg_ws_upgrade( c, hm, nullptr );
     }

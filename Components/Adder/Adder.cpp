@@ -51,10 +51,10 @@ Adder::Adder()
     , p( new internal::Adder() )
 {
     // add 2 inputs
-    SetInputCount_( 2, {"in1", "in2"} );
+    SetInputCount_( 2, { "in1", "in2" } );
 
     // add 1 output
-    SetOutputCount_( 1, {"out"} );
+    SetOutputCount_( 1, { "out" } );
 }
 
 void Adder::Process_( SignalBus const& inputs, SignalBus& outputs )

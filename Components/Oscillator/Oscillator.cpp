@@ -26,13 +26,11 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************************/
 
+#include <Constants.h>
 #include <Oscillator.h>
 
 #include <cmath>
 #include <mutex>
-
-const int c_sampleRate = 44100;
-const int c_bufferSize = 440;  // Process 10ms chunks of data @ 44100Hz
 
 using namespace DSPatch;
 using namespace DSPatchables;
@@ -79,8 +77,8 @@ public:
 Oscillator::Oscillator( float startFreq, float startAmpl )
     : p( new internal::Oscillator( startFreq, startAmpl ) )
 {
-    SetInputCount_( 1, {"freq (x1000)"} );
-    SetOutputCount_( 1, {"out"} );
+    SetInputCount_( 1, { "freq (x1000)" } );
+    SetOutputCount_( 1, { "out" } );
 }
 
 void Oscillator::SetBufferSize( int bufferSize )
