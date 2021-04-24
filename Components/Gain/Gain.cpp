@@ -1,5 +1,5 @@
 /******************************************************************************
-DSPatchables - DSPatch Component Repository
+Gain DSPatch Component
 Copyright (c) 2021, Marcus Tomlinson
 
 BSD 2-Clause License

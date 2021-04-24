@@ -1,5 +1,5 @@
 /******************************************************************************
-DSPatchables - DSPatch Component Repository
+Oscillator DSPatch Component
 Copyright (c) 2021, Marcus Tomlinson
 
 BSD 2-Clause License
