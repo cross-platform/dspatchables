@@ -76,6 +76,7 @@
         {
             document.querySelector('button').disabled = true;
             let source = audioCtx.createBufferSource();
+            time = audioCtx.currentTime + bufferLength;
             websocket.send( '' );
         }
     </script>
