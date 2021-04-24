@@ -36,7 +36,7 @@ class DLLEXPORT SocketOut final : public Component
 public:
     SocketOut();
 
-    void SetIp( std::string const& newIp );
+    void SetPort( std::string const& newPort );
 
 protected:
     virtual void Process_( SignalBus const& inputs, SignalBus& outputs ) override;

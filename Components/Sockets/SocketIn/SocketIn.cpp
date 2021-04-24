@@ -81,7 +81,7 @@ public:
     mg_mgr mgr;
     mg_connection* c;
     std::vector<short> buffer;
-    std::string ip;
+    std::string url;
 };
 
 }  // namespace internal
@@ -91,28 +91,28 @@ public:
 SocketIn::SocketIn()
     : p( new internal::SocketIn )
 {
-    SetInputCount_( 1, { "ip" } );
+    SetInputCount_( 1, { "url" } );
     SetOutputCount_( 1, { "in" } );
 }
 
-void SocketIn::SetIp( std::string const& newIp )
+void SocketIn::SetUrl( std::string const& newUrl )
 {
-    if ( newIp != p->ip )
+    if ( newUrl != p->url )
     {
-        p->ip = newIp;
+        p->url = newUrl;
         p->buffer = std::vector<short>();
         mg_mgr_free( &p->mgr );
         mg_mgr_init( &p->mgr );
-        p->c = mg_ws_connect( &p->mgr, ( p->ip + ":8000" ).c_str(), fn, &p->buffer, nullptr );
+        p->c = mg_ws_connect( &p->mgr, p->url.c_str(), fn, &p->buffer, nullptr );
     }
 }
 
 void SocketIn::Process_( SignalBus const& inputs, SignalBus& outputs )
 {
-    auto ip = inputs.GetValue<std::string>( 0 );
-    if ( ip )
+    auto url = inputs.GetValue<std::string>( 0 );
+    if ( url )
     {
-        SetIp( *ip );
+        SetUrl( *url );
     }
 
     if ( !p->buffer.empty() )

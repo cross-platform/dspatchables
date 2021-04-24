@@ -24,22 +24,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include <thread>
 
-static void hfn( mg_connection* c, int ev, void* ev_data, void* )
-{
-    auto hm = (mg_http_message*)ev_data;
-
-    if ( ev == MG_EV_ERROR )
-    {
-        LOG( LL_ERROR, ( "%p %s", c->fd, (char*)ev_data ) );
-    }
-    else if ( ev == MG_EV_HTTP_MSG )
-    {
-        mg_http_serve_opts opts;
-        opts.root_dir = HTML_ROOT;
-        mg_http_serve_dir( c, hm, &opts );
-    }
-}
-
 static void fn( mg_connection* c, int ev, void* ev_data, void* data )
 {
     auto buffer = (std::vector<short>*)data;
@@ -49,9 +33,13 @@ static void fn( mg_connection* c, int ev, void* ev_data, void* data )
     {
         LOG( LL_ERROR, ( "%p %s", c->fd, (char*)ev_data ) );
     }
-    else if ( ev == MG_EV_HTTP_MSG )
+    else if ( ev == MG_EV_HTTP_MSG && std::string( hm->headers[0].name.ptr, hm->headers[0].name.len ) == "Host" )
     {
-        mg_ws_upgrade( c, hm, nullptr );
+        mg_http_serve_dir( c, hm, HTML_ROOT );
+    }
+    else if ( ev == MG_EV_HTTP_MSG && std::string( hm->headers[0].name.ptr, hm->headers[0].name.len ) == "Upgrade" )
+    {
+        mg_ws_upgrade( c, hm );
     }
     else if ( ev == MG_EV_WS_MSG )
     {
@@ -77,7 +65,6 @@ public:
     {
         mg_mgr_init( &mgr );
         c = mg_http_listen( &mgr, "localhost:8000", fn, &buffer );
-        hc = mg_http_listen( &mgr, "localhost:8080", hfn, &buffer );
     }
 
     ~SocketOut()
@@ -88,7 +75,7 @@ public:
     mg_mgr mgr;
     mg_connection *c, *hc;
     std::vector<short> buffer;
-    std::string ip;
+    std::string port;
 };
 
 }  // namespace internal
@@ -98,19 +85,18 @@ public:
 SocketOut::SocketOut()
     : p( new internal::SocketOut )
 {
-    SetInputCount_( 2, { "out", "ip" } );
+    SetInputCount_( 2, { "out", "port" } );
 }
 
-void SocketOut::SetIp( std::string const& newIp )
+void SocketOut::SetPort( std::string const& newPort )
 {
-    if ( newIp != p->ip )
+    if ( newPort != p->port )
     {
-        p->ip = newIp;
+        p->port = newPort;
         p->buffer = std::vector<short>();
         mg_mgr_free( &p->mgr );
         mg_mgr_init( &p->mgr );
-        p->c = mg_http_listen( &p->mgr, ( p->ip + ":8000" ).c_str(), fn, &p->buffer );
-        p->hc = mg_http_listen( &p->mgr, ( p->ip + ":8080" ).c_str(), hfn, &p->buffer );
+        p->c = mg_http_listen( &p->mgr, ( "localhost:" + p->port ).c_str(), fn, &p->buffer );
     }
 }
 
@@ -122,10 +108,10 @@ void SocketOut::Process_( SignalBus const& inputs, SignalBus& )
         p->buffer = *in;
     }
 
-    auto ip = inputs.GetValue<std::string>( 1 );
-    if ( ip )
+    auto port = inputs.GetValue<std::string>( 1 );
+    if ( port )
     {
-        SetIp( *ip );
+        SetPort( *port );
     }
 
     for ( int i = 0; i < c_period; ++i )

@@ -26,7 +26,7 @@
         let AudioContext = window.AudioContext || window.webkitAudioContext;
         let audioCtx = new AudioContext();
 
-        let websocket = new WebSocket( 'ws://' + location.hostname + ':8000' );
+        let websocket = new WebSocket( 'ws://' + location.host );
 
         function play( data )
         {
