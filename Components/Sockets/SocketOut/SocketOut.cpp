@@ -21,37 +21,39 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include <mongoose.h>
 
-#include <thread>
 #include <iostream>
+#include <thread>
 
-static void hfn(mg_connection *c, int ev, void *ev_data, void * data) {
-    auto buffer = (std::vector<short>*) data;
-    auto hm = (mg_http_message *) ev_data;
+static void hfn( mg_connection* c, int ev, void* ev_data, void* data )
+{
+    auto buffer = (std::vector<short>*)data;
+    auto hm = (mg_http_message*)ev_data;
 
-    if (ev == MG_EV_HTTP_MSG)
+    if ( ev == MG_EV_HTTP_MSG )
     {
         mg_http_serve_opts opts;
         opts.root_dir = HTML_ROOT;
-        mg_http_serve_dir(c, hm, &opts);
+        mg_http_serve_dir( c, hm, &opts );
     }
-    else if (ev == MG_EV_WS_MSG)
+    else if ( ev == MG_EV_WS_MSG )
     {
-        mg_ws_send(c, (const char*)&(*buffer)[0], buffer->size() * 2, WEBSOCKET_OP_BINARY);
+        mg_ws_send( c, (const char*)&( *buffer )[0], buffer->size() * 2, WEBSOCKET_OP_BINARY );
         *buffer = std::vector<short>();
     }
 }
 
-static void fn(mg_connection *c, int ev, void *ev_data, void * data) {
-    auto buffer = (std::vector<short>*) data;
-    auto hm = (mg_http_message *) ev_data;
+static void fn( mg_connection* c, int ev, void* ev_data, void* data )
+{
+    auto buffer = (std::vector<short>*)data;
+    auto hm = (mg_http_message*)ev_data;
 
-    if (ev == MG_EV_HTTP_MSG)
+    if ( ev == MG_EV_HTTP_MSG )
     {
-        mg_ws_upgrade(c, hm, nullptr);
+        mg_ws_upgrade( c, hm, nullptr );
     }
-    else if (ev == MG_EV_WS_MSG)
+    else if ( ev == MG_EV_WS_MSG )
     {
-        mg_ws_send(c, (const char*)&(*buffer)[0], buffer->size() * 2, WEBSOCKET_OP_BINARY);
+        mg_ws_send( c, (const char*)&( *buffer )[0], buffer->size() * 2, WEBSOCKET_OP_BINARY );
         *buffer = std::vector<short>();
     }
 }
@@ -71,14 +73,14 @@ class SocketOut
 public:
     SocketOut()
     {
-        mg_mgr_init(&mgr);
-        c = mg_http_listen(&mgr, "localhost:8000", fn, &buffer);
-        hc = mg_http_listen(&mgr, "localhost:8080", hfn, &buffer);
+        mg_mgr_init( &mgr );
+        c = mg_http_listen( &mgr, "localhost:8000", fn, &buffer );
+        hc = mg_http_listen( &mgr, "localhost:8080", hfn, &buffer );
     }
 
     ~SocketOut()
     {
-        mg_mgr_free(&mgr);
+        mg_mgr_free( &mgr );
     }
 
     mg_mgr mgr;
@@ -97,16 +99,16 @@ SocketOut::SocketOut()
     SetInputCount_( 2, { "out", "ip" } );
 }
 
-void SocketOut::SetIp(std::string const& newIp)
+void SocketOut::SetIp( std::string const& newIp )
 {
-    if (newIp != p->ip)
+    if ( newIp != p->ip )
     {
         p->ip = newIp;
         p->buffer = std::vector<short>();
-        mg_mgr_free(&p->mgr);
-        mg_mgr_init(&p->mgr);
-        p->c = mg_http_listen(&p->mgr, (p->ip + ":8000").c_str(), fn, &p->buffer);
-        p->hc = mg_http_listen(&p->mgr, (p->ip + ":8080").c_str(), hfn, &p->buffer);
+        mg_mgr_free( &p->mgr );
+        mg_mgr_init( &p->mgr );
+        p->c = mg_http_listen( &p->mgr, ( p->ip + ":8000" ).c_str(), fn, &p->buffer );
+        p->hc = mg_http_listen( &p->mgr, ( p->ip + ":8080" ).c_str(), hfn, &p->buffer );
     }
 }
 
@@ -121,16 +123,16 @@ void SocketOut::Process_( SignalBus const& inputs, SignalBus& )
     auto ip = inputs.GetValue<std::string>( 1 );
     if ( ip )
     {
-        SetIp(*ip);
+        SetIp( *ip );
     }
 
-    for (int i = 0; i < 50; ++i)
+    for ( int i = 0; i < 50; ++i )
     {
-        mg_mgr_poll(&p->mgr, 0);
-        if (p->buffer.empty())
+        mg_mgr_poll( &p->mgr, 0 );
+        if ( p->buffer.empty() )
         {
             break;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
     }
 }

@@ -20,7 +20,7 @@
         let channels = 1;
         let frameCount = 440;
         let sampleRate = 44100;
-        let bufferLength = channels * (frameCount / sampleRate);
+        let bufferLength = channels * ( frameCount / sampleRate );
         let readAhead = bufferLength * 10;
 
         let AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -31,17 +31,17 @@
         function play( data )
         {
             // buffer
-            while (audioCtx.currentTime < (time - readAhead)) {};
+            while ( audioCtx.currentTime < ( time - readAhead ) ) {};
 
-            if (audioCtx.currentTime < time)
+            if ( audioCtx.currentTime < time )
             {
-                document.querySelector('button').innerHTML = 'Connected';
-                let myArrayBuffer = audioCtx.createBuffer(channels, frameCount, sampleRate);
+                document.querySelector( 'button' ).innerHTML = 'Connected';
+                let myArrayBuffer = audioCtx.createBuffer( channels, frameCount, sampleRate );
 
-                for (let channel = 0; channel < channels; channel++)
+                for ( let channel = 0; channel < channels; channel++ )
                 {
-                    let nowBuffering = myArrayBuffer.getChannelData(channel);
-                    for (let i = 0; i < frameCount; i++)
+                    let nowBuffering = myArrayBuffer.getChannelData( channel );
+                    for ( let i = 0; i < frameCount; i++ )
                     {
                         nowBuffering[i] = data[i] / 32768
                     }
@@ -49,12 +49,12 @@
 
                 let source = audioCtx.createBufferSource();
                 source.buffer = myArrayBuffer;
-                source.connect(audioCtx.destination);
-                source.start(time);
+                source.connect( audioCtx.destination );
+                source.start( time );
             }
             else
             {
-                document.querySelector('button').innerHTML = 'Connecting...';
+                document.querySelector( 'button' ).innerHTML = 'Connecting...';
                 time = audioCtx.currentTime;
             }
 
@@ -62,19 +62,20 @@
             websocket.send( '' );
         }
 
-        websocket.onmessage = (ev) =>
+        websocket.onmessage = ( ev ) =>
         {
             let fr = new FileReader();
-            fr.onload = () => {
-                const array = new Int16Array(fr.result);
+            fr.onload = () =>
+            {
+                const array = new Int16Array( fr.result );
                 play( array );
             };
-            fr.readAsArrayBuffer(ev.data);
+            fr.readAsArrayBuffer( ev.data );
         };
 
-        document.querySelector('button').onclick = () =>
+        document.querySelector( 'button' ).onclick = () =>
         {
-            document.querySelector('button').disabled = true;
+            document.querySelector( 'button' ).disabled = true;
             let source = audioCtx.createBufferSource();
             time = audioCtx.currentTime + bufferLength;
             websocket.send( '' );

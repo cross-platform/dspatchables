@@ -21,32 +21,33 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include <mongoose.h>
 
-static void fn(mg_connection *c, int ev, void *ev_data, void * data) {
-    auto buffer = (std::vector<short>*) data;
-    auto wm = (mg_ws_message*) ev_data;
+static void fn( mg_connection* c, int ev, void* ev_data, void* data )
+{
+    auto buffer = (std::vector<short>*)data;
+    auto wm = (mg_ws_message*)ev_data;
 
-    if (ev == MG_EV_ERROR)
+    if ( ev == MG_EV_ERROR )
     {
-        LOG(LL_ERROR, ("%p %s", c->fd, (char *) ev_data));
+        LOG( LL_ERROR, ( "%p %s", c->fd, (char*)ev_data ) );
     }
-    else if (ev == MG_EV_WS_OPEN)
+    else if ( ev == MG_EV_WS_OPEN )
     {
-        buffer->push_back(0);
+        buffer->push_back( 0 );
     }
-    else if (ev == MG_EV_CLOSE)
+    else if ( ev == MG_EV_CLOSE )
     {
         *buffer = std::vector<short>();
     }
-    else if (ev == MG_EV_WS_MSG)
+    else if ( ev == MG_EV_WS_MSG )
     {
-        if (wm->data.len != 0)
+        if ( wm->data.len != 0 )
         {
-            auto short_data = (const short*) wm->data.ptr;
+            auto short_data = (const short*)wm->data.ptr;
 
             *buffer = std::vector<short>();
             for ( size_t i = 0; i < wm->data.len / 2; ++i )
             {
-                buffer->push_back(short_data[i]);
+                buffer->push_back( short_data[i] );
             }
         }
     }
@@ -67,17 +68,17 @@ class SocketIn
 public:
     SocketIn()
     {
-        mg_mgr_init(&mgr);
-        c = mg_ws_connect(&mgr, "localhost:8000", fn, &buffer, nullptr);
+        mg_mgr_init( &mgr );
+        c = mg_ws_connect( &mgr, "localhost:8000", fn, &buffer, nullptr );
     }
 
     ~SocketIn()
     {
-        mg_mgr_free(&mgr);
+        mg_mgr_free( &mgr );
     }
 
     mg_mgr mgr;
-    mg_connection *c;
+    mg_connection* c;
     std::vector<short> buffer;
     std::string ip;
 };
@@ -93,15 +94,15 @@ SocketIn::SocketIn()
     SetOutputCount_( 1, { "in" } );
 }
 
-void SocketIn::SetIp(std::string const& newIp)
+void SocketIn::SetIp( std::string const& newIp )
 {
-    if (newIp != p->ip)
+    if ( newIp != p->ip )
     {
         p->ip = newIp;
         p->buffer = std::vector<short>();
-        mg_mgr_free(&p->mgr);
-        mg_mgr_init(&p->mgr);
-        p->c = mg_ws_connect(&p->mgr, (p->ip + ":8000").c_str(), fn, &p->buffer, nullptr);
+        mg_mgr_free( &p->mgr );
+        mg_mgr_init( &p->mgr );
+        p->c = mg_ws_connect( &p->mgr, ( p->ip + ":8000" ).c_str(), fn, &p->buffer, nullptr );
     }
 }
 
@@ -110,18 +111,18 @@ void SocketIn::Process_( SignalBus const& inputs, SignalBus& outputs )
     auto ip = inputs.GetValue<std::string>( 0 );
     if ( ip )
     {
-        SetIp(*ip);
+        SetIp( *ip );
     }
 
-    if (!p->buffer.empty())
+    if ( !p->buffer.empty() )
     {
-        mg_ws_send(p->c, nullptr, 0, WEBSOCKET_OP_BINARY);
+        mg_ws_send( p->c, nullptr, 0, WEBSOCKET_OP_BINARY );
     }
 
-    mg_mgr_poll(&p->mgr, 50);
+    mg_mgr_poll( &p->mgr, 50 );
 
-    if (p->buffer.size() > 1)
+    if ( p->buffer.size() > 1 )
     {
-        outputs.SetValue(0, p->buffer);
+        outputs.SetValue( 0, p->buffer );
     }
 }
