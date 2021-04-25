@@ -33,13 +33,13 @@ static void fn( mg_connection* c, int ev, void* ev_data, void* data )
     {
         LOG( LL_ERROR, ( "%p %s", c->fd, (char*)ev_data ) );
     }
-    else if ( ev == MG_EV_HTTP_MSG && std::string( hm->headers[0].name.ptr, hm->headers[0].name.len ) == "Host" )
-    {
-        mg_http_serve_dir( c, hm, HTML_ROOT );
-    }
-    else if ( ev == MG_EV_HTTP_MSG && std::string( hm->headers[0].name.ptr, hm->headers[0].name.len ) == "Upgrade" )
+    else if ( ev == MG_EV_HTTP_MSG && std::string( hm->message.ptr ).find( "websocket" ) != std::string::npos )
     {
         mg_ws_upgrade( c, hm );
+    }
+    else if ( ev == MG_EV_HTTP_MSG )
+    {
+        mg_http_serve_dir( c, hm, HTML_ROOT );
     }
     else if ( ev == MG_EV_WS_MSG )
     {
