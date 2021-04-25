@@ -114,7 +114,7 @@ void SocketOut::Process_( SignalBus const& inputs, SignalBus& )
         SetPort( *port );
     }
 
-    for ( int i = 0; i < c_period; ++i )
+    for ( int i = 0; i < c_doublePeriod; ++i )
     {
         mg_mgr_poll( &p->mgr, 0 );
         if ( p->buffer.empty() )

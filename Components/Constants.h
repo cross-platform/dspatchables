@@ -37,7 +37,8 @@ const int c_bufferWaitTimeoutMs = 500;  // Wait a max of 500ms for the sound car
 const int c_syncWaitTimeoutS = 2;       // Wait a max of 2s for the Process_() method to respond
 
 // Sockets
-const int c_period = int( ( c_bufferSize / c_sampleRate ) * 1500.0f );
+const int c_period = int( ( c_bufferSize / c_sampleRate ) * 1000.0f );
+const int c_doublePeriod = c_period * 2;
 
 // WaveWriter
 const int c_channelCount = 2;
