@@ -47,7 +47,7 @@ static void fn( mg_connection* c, int ev, void* ev_data, void* data )
     else if ( ev == MG_EV_WS_MSG )
     {
         mg_ws_send( c, (const char*)&( *buffer )[0], buffer->size() * 2, WEBSOCKET_OP_BINARY );
-        *buffer = std::vector<short>();
+        *buffer = {};
     }
 }
 
@@ -96,7 +96,7 @@ void SocketOut::SetPort( std::string const& newPort )
     if ( newPort != p->port )
     {
         p->port = newPort;
-        p->buffer = std::vector<short>();
+        p->buffer = {};
         mg_mgr_free( &p->mgr );
         mg_mgr_init( &p->mgr );
         p->c = mg_http_listen( &p->mgr, ( "localhost:" + p->port ).c_str(), fn, &p->buffer );

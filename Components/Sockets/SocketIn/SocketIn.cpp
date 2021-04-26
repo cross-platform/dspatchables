@@ -36,11 +36,11 @@ static void fn( mg_connection* c, int ev, void* ev_data, void* data )
     }
     else if ( ev == MG_EV_WS_OPEN )
     {
-        buffer->push_back( 0 );
+        *buffer = { 0 };
     }
     else if ( ev == MG_EV_CLOSE )
     {
-        *buffer = std::vector<short>();
+        *buffer = {};
     }
     else if ( ev == MG_EV_WS_MSG )
     {
@@ -48,11 +48,15 @@ static void fn( mg_connection* c, int ev, void* ev_data, void* data )
         {
             auto short_data = (const short*)wm->data.ptr;
 
-            *buffer = std::vector<short>();
+            *buffer = {};
             for ( size_t i = 0; i < wm->data.len / 2; ++i )
             {
                 buffer->push_back( short_data[i] );
             }
+        }
+        else
+        {
+            *buffer = { 0 };
         }
     }
 }
@@ -103,7 +107,7 @@ void SocketIn::SetUrl( std::string const& newUrl )
     if ( newUrl != p->url )
     {
         p->url = newUrl;
-        p->buffer = std::vector<short>();
+        p->buffer = {};
         mg_mgr_free( &p->mgr );
         mg_mgr_init( &p->mgr );
         p->c = mg_ws_connect( &p->mgr, p->url.c_str(), fn, &p->buffer, nullptr );
