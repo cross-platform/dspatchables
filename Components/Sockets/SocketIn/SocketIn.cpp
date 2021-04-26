@@ -20,7 +20,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <Constants.h>
 #include <SocketIn.h>
 
+extern "C"
+{
 #include <mongoose.h>
+}
 
 static void fn( mg_connection* c, int ev, void* ev_data, void* data )
 {

@@ -20,7 +20,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <Constants.h>
 #include <SocketOut.h>
 
+extern "C"
+{
 #include <mongoose.h>
+}
 
 #include <thread>
 
@@ -114,13 +117,15 @@ void SocketOut::Process_( SignalBus const& inputs, SignalBus& )
         SetPort( *port );
     }
 
-    for ( int i = 0; i < c_doublePeriod; ++i )
+    auto begin = std::chrono::steady_clock::now();
+    decltype( begin ) end;
+    do
     {
-        mg_mgr_poll( &p->mgr, 0 );
+        mg_mgr_poll( &p->mgr, c_doublePeriod );
         if ( p->buffer.empty() )
         {
             break;
         }
-        std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
-    }
+        end = std::chrono::steady_clock::now();
+    } while ( std::chrono::duration_cast<std::chrono::milliseconds>( end - begin ).count() < c_doublePeriod );
 }
