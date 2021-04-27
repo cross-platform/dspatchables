@@ -110,7 +110,14 @@ void SocketIn::SetUrl( std::string const& newUrl )
         p->buffer = {};
         mg_mgr_free( &p->mgr );
         mg_mgr_init( &p->mgr );
-        p->c = mg_ws_connect( &p->mgr, p->url.c_str(), fn, &p->buffer, nullptr );
+        if ( p->url.find( ":" ) == std::string::npos )
+        {
+            p->c = mg_ws_connect( &p->mgr, ( "localhost:" + p->url ).c_str(), fn, &p->buffer, nullptr );
+        }
+        else
+        {
+            p->c = mg_ws_connect( &p->mgr, p->url.c_str(), fn, &p->buffer, nullptr );
+        }
     }
 }
 
