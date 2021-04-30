@@ -2310,7 +2310,11 @@ static int mg_sock_send(struct mg_connection *c, const void *buf, int len,
     union usa usa = tousa(&c->peer);
     n = sendto(FD(c), buf, len, 0, &usa.sa, sizeof(usa.sin));
   } else {
+#ifdef MSG_NOSIGNAL
     n = send(FD(c), buf, len, MSG_NOSIGNAL);
+#else
+    n = send(FD(c), buf, len, 0);
+#endif
   }
   *fail = (n == 0) || (n < 0 && mg_sock_failed());
   return n;
