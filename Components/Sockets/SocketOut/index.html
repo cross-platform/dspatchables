@@ -24,9 +24,9 @@
         let readAhead = bufferLength * 10;
 
         let AudioContext = window.AudioContext || window.webkitAudioContext;
-        let audioCtx = new AudioContext();
-
         let websocket = new WebSocket( 'ws://' + location.host );
+
+        let audioCtx;
 
         function play( data )
         {
@@ -76,7 +76,10 @@
         document.querySelector( 'button' ).onclick = () =>
         {
             document.querySelector( 'button' ).disabled = true;
-            let source = audioCtx.createBufferSource();
+            audioCtx = new AudioContext({
+                sampleRate: sampleRate
+            });
+            audioCtx.createBufferSource();
             time = audioCtx.currentTime + bufferLength;
             websocket.send( '' );
         }
