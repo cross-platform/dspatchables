@@ -7,12 +7,10 @@ include_directories(
 )
 
 file(GLOB srcs *.cpp RtAudio/*.cpp)
-file(GLOB hdrs *.h RtAudio/*.h)
 
 add_library(
     ${PROJECT_NAME} SHARED
     ${srcs}
-    ${hdrs}
 )
 
 target_link_libraries(

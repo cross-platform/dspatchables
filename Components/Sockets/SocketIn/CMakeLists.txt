@@ -7,12 +7,10 @@ include_directories(
 )
 
 file(GLOB srcs *.cpp ../Mongoose/*.c)
-file(GLOB hdrs *.h ../Mongoose/*.h)
 
 add_library(
     ${PROJECT_NAME} SHARED
     ${srcs}
-    ${hdrs}
 )
 
 target_link_libraries(

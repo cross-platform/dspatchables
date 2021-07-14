@@ -31,8 +31,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cmath>
 
 // Common
-const float c_sampleRate = 44100;
-const float c_bufferSize = 440;  // Process 10ms chunks of data @ 44100Hz
+const int c_sampleRate = 44100;
+const int c_bufferSize = 440;  // Process 10ms chunks of data @ 44100Hz
 
 // AudioDevice
 const int c_bufferWaitTimeoutMs = 500;  // Wait a max of 500ms for the sound card to respond
@@ -41,6 +41,12 @@ const int c_syncWaitTimeoutS = 2;       // Wait a max of 2s for the Process_() m
 // Sockets
 const int c_period = ceil( ( c_bufferSize / c_sampleRate ) * 1000.0f );
 const int c_doublePeriod = c_period * 2;
+
+// VoxRemover
+const float c_pi = 3.1415926535897932384626433832795f;
+const float c_twoPi = c_pi * 2.0f;
+const float c_s2fCoeff = 1.0f / 32767.0f;
+const float c_f2sCoeff = 32767.0f * 0.85f;
 
 // WaveWriter
 const int c_channelCount = 2;

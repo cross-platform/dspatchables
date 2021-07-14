@@ -35,8 +35,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using namespace DSPatch;
 using namespace DSPatchables;
 
-static const float TWOPI = 6.283185307179586476925286766559f;
-
 namespace DSPatch
 {
 namespace DSPatchables
@@ -161,7 +159,7 @@ void Oscillator::Process_( SignalBus const& inputs, SignalBus& outputs )
 void DSPatchables::internal::Oscillator::BuildLookup()
 {
     float posFrac = lookupLength <= 0 ? 0 : (float)lastPos / (float)lookupLength;
-    float angleInc = TWOPI * frequency / sampleRate;
+    float angleInc = c_twoPi * frequency / sampleRate;
 
     lookupLength = (int)( (float)sampleRate / frequency );
 

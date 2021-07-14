@@ -8,12 +8,10 @@ include_directories(
 )
 
 file(GLOB srcs *.cpp)
-file(GLOB hdrs *.h)
 
 add_library(
     ${PROJECT_NAME} SHARED
     ${srcs}
-    ${hdrs}
 )
 
 target_link_libraries(
