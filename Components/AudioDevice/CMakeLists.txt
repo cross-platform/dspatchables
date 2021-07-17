@@ -6,7 +6,7 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/RtAudio
 )
 
-file(GLOB srcs *.cpp RtAudio/*.cpp)
+file(GLOB_RECURSE srcs *.cpp)
 
 add_library(
     ${PROJECT_NAME} SHARED

@@ -6,7 +6,7 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/kissfft
 )
 
-file(GLOB srcs *.cpp kissfft/*.cpp kissfft/*.c)
+file(GLOB_RECURSE srcs *.cpp *.c)
 
 add_library(
     ${PROJECT_NAME} SHARED

@@ -6,7 +6,7 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/../Mongoose
 )
 
-file(GLOB srcs *.cpp ../Mongoose/*.c)
+file(GLOB_RECURSE srcs *.cpp ../*.c)
 
 add_library(
     ${PROJECT_NAME} SHARED
