@@ -2,6 +2,8 @@
 
 #include <DSPatch.h>
 
+#include <thread>
+
 class VstLoader;
 struct AEffect;
 struct VstEvents;
@@ -29,6 +31,8 @@ protected:
 
 private:
     void _Run();
+
+    std::thread _thread;
 
     float** _vstInputs;
     float** _vstOutputs;

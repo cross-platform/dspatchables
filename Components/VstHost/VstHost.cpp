@@ -328,14 +328,14 @@ bool VstHost::LoadVst( const char* vstPath )
     _dspInputs.resize( _vstEffect->numInputs );
     _dspOutputs.resize( _vstEffect->numOutputs );
 
+    SetInputCount_(_vstEffect->numInputs);
+    SetOutputCount_(_vstEffect->numOutputs);
     for ( long i = 0; i < _vstEffect->numInputs; i++ )
     {
-        AddInput_();
         _dspInputs[i].resize( _bufferSize );
     }
     for ( long i = 0; i < _vstEffect->numOutputs; i++ )
     {
-        AddOutput_();
         _dspOutputs[i].resize( _bufferSize );
     }
 
@@ -383,9 +383,6 @@ void VstHost::CloseVst()
         // close VST
         _vstEffect->dispatcher( _vstEffect, effClose, 0, 0, 0, 0 );
         _vstEffect = NULL;
-
-        ClearInputs_();
-        ClearOutputs_();
     }
 }
 
@@ -397,7 +394,7 @@ bool VstHost::ShowVst()
         return false;
     }
 
-    Start( DspThread::NormalPriority );
+    _thread = std::thread( &VstHost::_Run, this );
     return true;
 }
 
@@ -415,20 +412,21 @@ void VstHost::ProcessMidi( VstEvents* events )
     vstEffect->dispatcher( _vstEffect, effProcessEvents, 0, 0, events, 0.0f );
 }
 
-void VstHost::Process_( DspSignalBus& inputs, DspSignalBus& outputs )
+void VstHost::Process_( SignalBus const& inputs, SignalBus& outputs )
 {
     if ( _vstEffect != NULL )
     {
         // convert DSPatch inputs to VST inputs
         for ( unsigned short i = 0; i < _dspInputs.size(); i++ )
         {
-            if ( !inputs.GetValue( i, _dspInputs[i] ) )
+            auto in = inputs.GetValue<std::vector<short>>( i );
+            if ( !in )
             {
                 memset( _vstInputs[i], 0, _bufferSize * sizeof( float ) );
             }
             else
             {
-                memcpy( _vstInputs[i], &_dspInputs[i][0], _bufferSize * sizeof( float ) );
+                memcpy( _vstInputs[i], &in[0], _bufferSize * sizeof( float ) );
             }
         }
 
