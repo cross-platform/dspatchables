@@ -1,4 +1,5 @@
 add_subdirectory(Adder)
+add_subdirectory(Agc)
 add_subdirectory(AudioDevice)
 add_subdirectory(Gain)
 add_subdirectory(InOut)
