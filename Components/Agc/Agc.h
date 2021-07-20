@@ -1,5 +1,5 @@
 /******************************************************************************
-DSPatchables - DSPatch Component Repository
+Agc DSPatch Component
 Copyright (c) 2021, Marcus Tomlinson
 
 BSD 2-Clause License
@@ -28,30 +28,31 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
-#include <cmath>
+#include <DSPatch.h>
 
-// Common
-const int c_sampleRate = 44100;
-const int c_bufferSize = 440;  // Process 10ms chunks of data @ 44100Hz
+namespace DSPatch
+{
+namespace DSPatchables
+{
 
-// Agc
-static const int c_dbfsLevel = 3;        // -3db limiter
-static const int c_compressorGain = 90;  // +90db max gain
+namespace internal
+{
+class Agc;
+}
 
-// AudioDevice
-const int c_bufferWaitTimeoutMs = 500;  // Wait a max of 500ms for the sound card to respond
-const int c_syncWaitTimeoutS = 2;       // Wait a max of 2s for the Process_() method to respond
+class DLLEXPORT Agc final : public Component
+{
+public:
+    Agc( bool enableNoiseSuppression = true );
 
-// Sockets
-const int c_period = ceil( ( c_bufferSize / c_sampleRate ) * 1000.0f );
-const int c_doublePeriod = c_period * 2;
+protected:
+    virtual void Process_( SignalBus const& inputs, SignalBus& outputs ) override;
 
-// VoxRemover
-const float c_pi = 3.1415926535897932384626433832795f;
-const float c_twoPi = c_pi * 2.0f;
-const float c_s2fCoeff = 1.0f / 32767.0f;
-const float c_f2sCoeff = 32767.0f * 0.85f;
+private:
+    std::unique_ptr<internal::Agc> p;
+};
 
-// WaveWriter
-const int c_channelCount = 2;
-const int c_bitsPerSample = 16;
+EXPORT_PLUGIN( Agc )
+
+}  // namespace DSPatchables
+}  // namespace DSPatch
