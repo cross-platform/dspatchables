@@ -14,10 +14,10 @@ endif()
 
 if(WIN32)
     add_definitions(-DWEBRTC_WIN -D_USE_MATH_DEFINES)
-    set(CONFIGURE_COMMAND ${MESON} <INSTALL_DIR>/build)
+    set(CONFIGURE_COMMAND ${MESON} <INSTALL_DIR>/build --buildtype=release)
 else()
     add_definitions(-DWEBRTC_POSIX)
-    set(CONFIGURE_COMMAND NINJA=${NINJA} ${MESON} <INSTALL_DIR>/build)
+    set(CONFIGURE_COMMAND NINJA=${NINJA} ${MESON} <INSTALL_DIR>/build --buildtype=release)
 endif()
 
 add_definitions(-DWEBRTC_AUDIO_PROCESSING_ONLY_BUILD)
