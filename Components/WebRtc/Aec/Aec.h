@@ -1,5 +1,5 @@
 /******************************************************************************
-DSPatchables - DSPatch Component Repository
+Aec DSPatch Component
 Copyright (c) 2021, Marcus Tomlinson
 
 BSD 2-Clause License
@@ -28,33 +28,31 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
-#include <cmath>
+#include <DSPatch.h>
 
-// Common
-const int c_sampleRate = 44100;
-const int c_bufferSize = 440;  // Process 10ms chunks of data @ 44100Hz
+namespace DSPatch
+{
+namespace DSPatchables
+{
 
-// Aec
-static const int c_initialStreamDelay = 150;  // 150ms far signal delay has proven to be good place to start
+namespace internal
+{
+class Aec;
+}
 
-// Agc
-static const int c_dbfsLevel = 3;        // -3db limiter
-static const int c_compressorGain = 90;  // +90db max gain
+class DLLEXPORT Aec final : public Component
+{
+public:
+    Aec();
 
-// AudioDevice
-const int c_bufferWaitTimeoutMs = 500;  // Wait a max of 500ms for the sound card to respond
-const int c_syncWaitTimeoutS = 2;       // Wait a max of 2s for the Process_() method to respond
+protected:
+    virtual void Process_( SignalBus const& inputs, SignalBus& outputs ) override;
 
-// Sockets
-const int c_period = ceil( ( c_bufferSize / c_sampleRate ) * 1000.0f );
-const int c_doublePeriod = c_period * 2;
+private:
+    std::unique_ptr<internal::Aec> p;
+};
 
-// VoxRemover
-const float c_pi = 3.1415926535897932384626433832795f;
-const float c_twoPi = c_pi * 2.0f;
-const float c_s2fCoeff = 1.0f / 32767.0f;
-const float c_f2sCoeff = 32767.0f * 0.85f;
+EXPORT_PLUGIN( Aec )
 
-// WaveWriter
-const int c_channelCount = 2;
-const int c_bitsPerSample = 16;
+}  // namespace DSPatchables
+}  // namespace DSPatch
