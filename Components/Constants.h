@@ -35,18 +35,18 @@ const int c_sampleRate = 44100;
 const int c_bufferSize = 440;  // Process 10ms chunks of data @ 44100Hz
 
 // Aec
-static const int c_initialStreamDelay = 150;  // 150ms far signal delay has proven to be good place to start
+const int c_initialStreamDelay = 150;  // 150ms far signal delay has proven to be good place to start
 
 // Agc
-static const int c_dbfsLevel = 3;        // -3db limiter
-static const int c_compressorGain = 90;  // +90db max gain
+const int c_dbfsLevel = 3;        // -3db limiter
+const int c_compressorGain = 90;  // +90db max gain
 
 // AudioDevice
 const int c_bufferWaitTimeoutMs = 500;  // Wait a max of 500ms for the sound card to respond
 const int c_syncWaitTimeoutS = 2;       // Wait a max of 2s for the Process_() method to respond
 
 // Sockets
-const int c_period = ceil( ( c_bufferSize / c_sampleRate ) * 1000.0f );
+const int c_period = ceil( ( float( c_bufferSize ) / float( c_sampleRate ) ) * 1000.0f );
 const int c_doublePeriod = c_period * 2;
 
 // VoxRemover

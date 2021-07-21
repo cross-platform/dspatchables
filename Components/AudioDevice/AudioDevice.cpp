@@ -62,8 +62,12 @@ public:
     void StopStream();
     void StartStream();
 
-    static int StaticCallback(
-        void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames, double streamTime, unsigned int status, void* userData );
+    static int StaticCallback( void* outputBuffer,
+                               void* inputBuffer,
+                               unsigned int nBufferFrames,
+                               double streamTime,
+                               unsigned int status,
+                               void* userData );
 
     int DynamicCallback( void* inputBuffer, void* outputBuffer, RtAudioStreamStatus status );
 
@@ -104,7 +108,10 @@ public:
 }  // namespace DSPatchables
 }  // namespace DSPatch
 
-AudioDevice::AudioDevice( bool isOutputDevice, std::vector<std::string> const& deviceNameHas, bool defaultIfNotFound, bool loopback )
+AudioDevice::AudioDevice( bool isOutputDevice,
+                          std::vector<std::string> const& deviceNameHas,
+                          bool defaultIfNotFound,
+                          bool loopback )
     : p( new internal::AudioDevice() )
 {
     SetDevice( isOutputDevice, deviceNameHas, defaultIfNotFound, loopback );
@@ -180,7 +187,7 @@ bool AudioDevice::Available()
         if ( p->hasInputs && !p->notFoundNotified )
         {
             int defaultInputDevice = GetDefaultInputDevice();
-            if ( GetCurrentDevice() != defaultInputDevice )
+            if ( GetCurrentDevice() != defaultInputDevice && GetDeviceInputCount( defaultInputDevice ) < 32 )
             {
                 p->notFoundNotified = true;
                 for ( auto const& sub : p->nameHas )
@@ -190,12 +197,14 @@ bool AudioDevice::Available()
                 std::cout << "input device not found." << std::endl;
                 std::cout << "Switching to default input device: " << GetDeviceName( defaultInputDevice ) << std::endl;
                 SetDevice( defaultInputDevice, p->loopback );
+                p->callback( true );
+                return true;
             }
         }
         else if ( !p->hasInputs && !p->notFoundNotified )
         {
             int defaultOutputDevice = GetDefaultOutputDevice();
-            if ( GetCurrentDevice() != defaultOutputDevice )
+            if ( GetCurrentDevice() != defaultOutputDevice && GetDeviceOutputCount( defaultOutputDevice ) < 32 )
             {
                 p->notFoundNotified = true;
                 for ( auto const& sub : p->nameHas )
@@ -203,11 +212,35 @@ bool AudioDevice::Available()
                     std::cout << sub << " ";
                 }
                 std::cout << "output device not found." << std::endl;
-                std::cout << "Switching to default output device: " << GetDeviceName( defaultOutputDevice ) << std::endl;
+                std::cout << "Switching to default output device: " << GetDeviceName( defaultOutputDevice )
+                          << std::endl;
                 SetDevice( defaultOutputDevice, p->loopback );
+                p->callback( true );
+                return true;
             }
         }
-        return true;
+
+        // no good default was found, try the first x:x device
+        for ( int i = 0; i < GetDeviceCount(); ++i )
+        {
+            if ( i != GetDefaultOutputDevice() && i != GetDefaultInputDevice() &&
+                 GetDeviceInputCount( i ) == GetDeviceOutputCount( i ) )
+            {
+                if ( GetCurrentDevice() != i )
+                {
+                    p->notFoundNotified = true;
+                    for ( auto const& sub : p->nameHas )
+                    {
+                        std::cout << sub << " ";
+                    }
+                    std::cout << ( p->hasInputs ? "input device" : "output device" ) << " not found. " << std::endl;
+                    std::cout << "Switching to first x:x device: " << GetDeviceName( i ) << std::endl;
+                    SetDevice( i, p->loopback );
+                    p->callback( true );
+                    return true;
+                }
+            }
+        }
     }
 
     if ( !p->notFoundNotified )
@@ -289,8 +322,8 @@ bool AudioDevice::SetDevice( bool isOutputDevice,
     {
         std::lock_guard<std::mutex> availableLock( p->availableMutex );
 
-        if ( p->hasInputs == !isOutputDevice && p->nameHas == deviceNameHas && p->defaultIfNotFound == defaultIfNotFound &&
-             p->loopback == loopback )
+        if ( p->hasInputs == !isOutputDevice && p->nameHas == deviceNameHas &&
+             p->defaultIfNotFound == defaultIfNotFound && p->loopback == loopback )
         {
             // Device already set, don't re-set unneccesarily
             return true;
@@ -421,7 +454,8 @@ void AudioDevice::Process_( SignalBus const& inputs, SignalBus& outputs )
         std::unique_lock<std::mutex> lock( p->syncMutex );
         if ( !p->gotSyncReady )  // if haven't already got the release
         {
-            if ( p->syncCondt.wait_for( lock, std::chrono::milliseconds( c_bufferWaitTimeoutMs ) ) == std::cv_status::timeout )
+            if ( p->syncCondt.wait_for( lock, std::chrono::milliseconds( c_bufferWaitTimeoutMs ) ) ==
+                 std::cv_status::timeout )
             {
                 lock.unlock();
                 if ( !Available() && IsStreaming() )
@@ -529,8 +563,8 @@ void DSPatchables::internal::AudioDevice::StartStream()
 #endif
     options.flags |= RTAUDIO_NONINTERLEAVED;
 
-    audioStream.openStream( outParams, inParams, RTAUDIO_SINT16, sampleRate, (unsigned int*)&bufferSize, &StaticCallback, this,
-                            &options );
+    audioStream.openStream( outParams, inParams, RTAUDIO_SINT16, sampleRate, (unsigned int*)&bufferSize,
+                            &StaticCallback, this, &options );
 
     isStreaming = true;
 
