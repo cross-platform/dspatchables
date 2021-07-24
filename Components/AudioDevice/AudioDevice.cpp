@@ -184,47 +184,11 @@ bool AudioDevice::Available()
 
     if ( p->defaultIfNotFound )
     {
-        if ( p->hasInputs && !p->notFoundNotified )
-        {
-            int defaultInputDevice = GetDefaultInputDevice();
-            if ( GetCurrentDevice() != defaultInputDevice && GetDeviceInputCount( defaultInputDevice ) < 32 )
-            {
-                p->notFoundNotified = true;
-                for ( auto const& sub : p->nameHas )
-                {
-                    std::cout << sub << " ";
-                }
-                std::cout << "input device not found." << std::endl;
-                std::cout << "Switching to default input device: " << GetDeviceName( defaultInputDevice ) << std::endl;
-                SetDevice( defaultInputDevice, p->loopback );
-                p->callback( true );
-                return true;
-            }
-        }
-        else if ( !p->hasInputs && !p->notFoundNotified )
-        {
-            int defaultOutputDevice = GetDefaultOutputDevice();
-            if ( GetCurrentDevice() != defaultOutputDevice && GetDeviceOutputCount( defaultOutputDevice ) < 32 )
-            {
-                p->notFoundNotified = true;
-                for ( auto const& sub : p->nameHas )
-                {
-                    std::cout << sub << " ";
-                }
-                std::cout << "output device not found." << std::endl;
-                std::cout << "Switching to default output device: " << GetDeviceName( defaultOutputDevice )
-                          << std::endl;
-                SetDevice( defaultOutputDevice, p->loopback );
-                p->callback( true );
-                return true;
-            }
-        }
-
-        // no good default was found, try the first x:y device
+#if defined( __LINUX_ALSA__ )
         for ( int i = 0; i < GetDeviceCount(); ++i )
         {
-            if ( i != GetDefaultOutputDevice() && i != GetDefaultInputDevice() &&
-                 GetDeviceInputCount( i ) > 0 && GetDeviceOutputCount( i ) > 0 )
+            if ( i != GetDefaultOutputDevice() && i != GetDefaultInputDevice() && GetDeviceInputCount( i ) > 0 &&
+                 GetDeviceOutputCount( i ) > 0 )
             {
                 if ( GetCurrentDevice() != i )
                 {
@@ -241,6 +205,43 @@ bool AudioDevice::Available()
                 }
             }
         }
+#else
+        if ( p->hasInputs && !p->notFoundNotified )
+        {
+            int defaultInputDevice = GetDefaultInputDevice();
+            if ( GetCurrentDevice() != defaultInputDevice )
+            {
+                p->notFoundNotified = true;
+                for ( auto const& sub : p->nameHas )
+                {
+                    std::cout << sub << " ";
+                }
+                std::cout << "input device not found." << std::endl;
+                std::cout << "Switching to default input device: " << GetDeviceName( defaultInputDevice ) << std::endl;
+                SetDevice( defaultInputDevice, p->loopback );
+                p->callback( true );
+                return true;
+            }
+        }
+        else if ( !p->hasInputs && !p->notFoundNotified )
+        {
+            int defaultOutputDevice = GetDefaultOutputDevice();
+            if ( GetCurrentDevice() != defaultOutputDevice )
+            {
+                p->notFoundNotified = true;
+                for ( auto const& sub : p->nameHas )
+                {
+                    std::cout << sub << " ";
+                }
+                std::cout << "output device not found." << std::endl;
+                std::cout << "Switching to default output device: " << GetDeviceName( defaultOutputDevice )
+                          << std::endl;
+                SetDevice( defaultOutputDevice, p->loopback );
+                p->callback( true );
+                return true;
+            }
+        }
+#endif
     }
 
     if ( !p->notFoundNotified )
