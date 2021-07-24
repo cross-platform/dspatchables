@@ -9,7 +9,7 @@ include_directories(
 file(GLOB srcs AudioDevice.cpp RtAudio/*.cpp)
 
 add_library(
-    ${PROJECT_NAME} SHARED
+    ${PROJECT_NAME}
     ${srcs}
 )
 
