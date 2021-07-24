@@ -220,11 +220,11 @@ bool AudioDevice::Available()
             }
         }
 
-        // no good default was found, try the first x:x device
+        // no good default was found, try the first x:y device
         for ( int i = 0; i < GetDeviceCount(); ++i )
         {
             if ( i != GetDefaultOutputDevice() && i != GetDefaultInputDevice() &&
-                 GetDeviceInputCount( i ) == GetDeviceOutputCount( i ) )
+                 GetDeviceInputCount( i ) > 0 && GetDeviceOutputCount( i ) > 0 )
             {
                 if ( GetCurrentDevice() != i )
                 {
@@ -234,7 +234,7 @@ bool AudioDevice::Available()
                         std::cout << sub << " ";
                     }
                     std::cout << ( p->hasInputs ? "input device" : "output device" ) << " not found. " << std::endl;
-                    std::cout << "Switching to first x:x device: " << GetDeviceName( i ) << std::endl;
+                    std::cout << "Switching to first x:y device: " << GetDeviceName( i ) << std::endl;
                     SetDevice( i, p->loopback );
                     p->callback( true );
                     return true;
