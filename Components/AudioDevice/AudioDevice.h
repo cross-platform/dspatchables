@@ -86,7 +86,5 @@ private:
     std::unique_ptr<internal::AudioDevice> p;
 };
 
-EXPORT_PLUGIN( AudioDevice, true, std::vector<std::string>{ "Built-in" }, true, false )
-
 }  // namespace DSPatchables
 }  // namespace DSPatch

@@ -6,7 +6,7 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/RtAudio
 )
 
-file(GLOB srcs *.cpp RtAudio/*.cpp)
+file(GLOB srcs AudioDevice.cpp RtAudio/*.cpp)
 
 add_library(
     ${PROJECT_NAME} SHARED
@@ -57,4 +57,30 @@ if(APPLE)
     )
 endif(APPLE)
 
-install(TARGETS ${PROJECT_NAME} DESTINATION lib/dspatch/components)
+# AudioIn
+
+add_library(
+    AudioIn SHARED
+    AudioIn.cpp
+)
+
+target_link_libraries(
+    AudioIn
+    ${PROJECT_NAME}
+)
+
+install(TARGETS AudioIn DESTINATION lib/dspatch/components)
+
+# AudioOut
+
+add_library(
+    AudioOut SHARED
+    AudioOut.cpp
+)
+
+target_link_libraries(
+    AudioOut
+    ${PROJECT_NAME}
+)
+
+install(TARGETS AudioOut DESTINATION lib/dspatch/components)
