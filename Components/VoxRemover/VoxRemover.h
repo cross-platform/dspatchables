@@ -72,6 +72,8 @@ private:
     void _FftSignalBuffers();
     void _ProcessSpectralBuffers();
     void _IfftSpectralBuffers();
+
+    float _dphi = 0.05;
 };
 
 EXPORT_PLUGIN( VoxRemover )

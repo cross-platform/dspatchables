@@ -38,7 +38,7 @@ using namespace DSPatchables;
 
 VoxRemover::VoxRemover()
 {
-    SetInputCount_( 2 );
+    SetInputCount_( 3, { "ch1", "ch2", "Δphi (/10)" } );
     SetOutputCount_( 2 );
 
     _BuildHanningLookup();
@@ -57,6 +57,12 @@ void VoxRemover::Process_( SignalBus const& inputs, SignalBus& outputs )
     if ( !in0 || !in1 || ( *in0 ).size() != c_bufferSize || ( *in1 ).size() != c_bufferSize )
     {
         return;
+    }
+
+    auto dphi = inputs.GetValue<float>( 2 );
+    if ( dphi )
+    {
+        _dphi = *dphi / 10;
     }
 
     for ( auto i = 0; i < c_bufferSize; i++ )
@@ -177,8 +183,8 @@ void VoxRemover::_ProcessSpectralBuffers()
         if ( _phiR > 1 )
             _phiR -= 1;
 
-        // remove if phase diff < 0.05 && magnitude diff < 0.005 && frequency > 700
-        if ( ( fabs( _phiL - _phiR ) < 0.05 && fabs( _magL - _magR ) < 0.005 ) && _frq > 700 )
+        // remove if phase diff < delta phi && frequency > 200
+        if ( ( fabs( _phiL - _phiR ) < _dphi ) && _frq > 200 )
         {
             _specBufL[i] = 0.0f;
             _specBufL[i + 1] = 0.0f;
