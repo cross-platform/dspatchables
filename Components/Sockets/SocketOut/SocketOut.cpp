@@ -103,7 +103,7 @@ void SocketOut::SetPort( std::string const& newPort )
     }
 }
 
-void SocketOut::Process_( SignalBus const& inputs, SignalBus& )
+void SocketOut::Process_( SignalBus& inputs, SignalBus& )
 {
     auto in = inputs.GetValue<std::vector<short>>( 0 );
     if ( in )

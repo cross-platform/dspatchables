@@ -82,7 +82,7 @@ Agc::Agc( bool enableNoiseSuppression )
     SetOutputCount_( 1 );
 }
 
-void Agc::Process_( SignalBus const& inputs, SignalBus& outputs )
+void Agc::Process_( SignalBus& inputs, SignalBus& outputs )
 {
     auto in = inputs.GetValue<std::vector<short>>( 0 );
 

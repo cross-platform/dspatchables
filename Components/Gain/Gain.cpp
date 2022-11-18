@@ -71,7 +71,7 @@ float Gain::GetGain() const
     return p->gain;
 }
 
-void Gain::Process_( SignalBus const& inputs, SignalBus& outputs )
+void Gain::Process_( SignalBus& inputs, SignalBus& outputs )
 {
     auto in = inputs.GetValue<std::vector<short>>( 0 );
     if ( !in )

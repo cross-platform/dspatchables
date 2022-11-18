@@ -445,7 +445,7 @@ void AudioDevice::ShowWarnings( bool enabled )
     p->audioStream.showWarnings( enabled );
 }
 
-void AudioDevice::Process_( SignalBus const& inputs, SignalBus& outputs )
+void AudioDevice::Process_( SignalBus& inputs, SignalBus& outputs )
 {
     std::lock_guard<std::mutex> processLock( p->processMutex );
 

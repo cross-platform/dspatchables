@@ -131,7 +131,7 @@ float Oscillator::GetFreq() const
     return p->frequency;
 }
 
-void Oscillator::Process_( SignalBus const& inputs, SignalBus& outputs )
+void Oscillator::Process_( SignalBus& inputs, SignalBus& outputs )
 {
     auto freq = inputs.GetValue<float>( 0 );
     if ( freq && *freq != 0.0f )

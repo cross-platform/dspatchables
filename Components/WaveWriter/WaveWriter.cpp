@@ -104,7 +104,7 @@ WaveWriter::~WaveWriter()
     write_word( p->file, file_length - 8, 4 );
 }
 
-void WaveWriter::Process_( SignalBus const& inputs, SignalBus& )
+void WaveWriter::Process_( SignalBus& inputs, SignalBus& )
 {
     std::vector<std::vector<short>*> ins;
     for ( int i = 0; i < p->channelCount; ++i )

@@ -48,7 +48,7 @@ VoxRemover::~VoxRemover()
 {
 }
 
-void VoxRemover::Process_( SignalBus const& inputs, SignalBus& outputs )
+void VoxRemover::Process_( SignalBus& inputs, SignalBus& outputs )
 {
     // 0. get current buffers (L & R)
     auto in0 = inputs.GetValue<std::vector<short>>( 0 );

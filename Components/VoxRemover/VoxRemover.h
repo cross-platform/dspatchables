@@ -44,7 +44,7 @@ public:
     virtual ~VoxRemover();
 
 protected:
-    virtual void Process_( SignalBus const& inputs, SignalBus& outputs ) override;
+    virtual void Process_( SignalBus& inputs, SignalBus& outputs ) override;
 
 private:
     std::vector<float> _hanningLookup = std::vector<float>( c_bufferSize * 2, 0.0f );

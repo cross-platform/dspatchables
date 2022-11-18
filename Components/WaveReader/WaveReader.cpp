@@ -181,7 +181,7 @@ WaveReader::WaveReader( std::string const& fileName )
     SetOutputCount_( p->waveFormat.channelCount );
 }
 
-void WaveReader::Process_( SignalBus const&, SignalBus& outputs )
+void WaveReader::Process_( SignalBus&, SignalBus& outputs )
 {
     if ( p->waveData.size() <= p->bufferSize )
     {

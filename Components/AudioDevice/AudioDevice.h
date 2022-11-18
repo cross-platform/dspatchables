@@ -80,7 +80,7 @@ public:
 
     void ShowWarnings( bool enabled );
 
-    virtual void Process_( SignalBus const& inputs, SignalBus& outputs ) override;
+    virtual void Process_( SignalBus& inputs, SignalBus& outputs ) override;
 
 private:
     std::unique_ptr<internal::AudioDevice> p;

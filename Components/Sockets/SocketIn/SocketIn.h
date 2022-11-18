@@ -39,7 +39,7 @@ public:
     void SetUrl( std::string const& newUrl );
 
 protected:
-    virtual void Process_( SignalBus const& inputs, SignalBus& outputs ) override;
+    virtual void Process_( SignalBus& inputs, SignalBus& outputs ) override;
 
 private:
     std::unique_ptr<internal::SocketIn> p;

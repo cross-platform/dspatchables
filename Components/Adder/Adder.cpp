@@ -57,7 +57,7 @@ Adder::Adder()
     SetOutputCount_( 1, { "out" } );
 }
 
-void Adder::Process_( SignalBus const& inputs, SignalBus& outputs )
+void Adder::Process_( SignalBus& inputs, SignalBus& outputs )
 {
     auto in1 = inputs.GetValue<std::vector<short>>( 0 );
     auto in2 = inputs.GetValue<std::vector<short>>( 1 );

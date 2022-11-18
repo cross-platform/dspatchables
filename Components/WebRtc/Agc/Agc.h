@@ -46,7 +46,7 @@ public:
     Agc( bool enableNoiseSuppression = true );
 
 protected:
-    virtual void Process_( SignalBus const& inputs, SignalBus& outputs ) override;
+    virtual void Process_( SignalBus& inputs, SignalBus& outputs ) override;
 
 private:
     std::unique_ptr<internal::Agc> p;

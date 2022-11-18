@@ -56,13 +56,13 @@ public:
     std::unique_ptr<ValueType> PopInput( int index );
 
 protected:
-    virtual void Process_( SignalBus const& inputs, SignalBus& outputs ) override;
+    virtual void Process_( SignalBus& inputs, SignalBus& outputs ) override;
 
 private:
     std::mutex _mutex;
 
-    std::vector<std::queue<Signal::SPtr>> _inputValues;
-    std::vector<std::queue<Signal::SPtr>> _outputValues;
+    std::vector<std::queue<std::shared_ptr<Signal>>> _inputValues;
+    std::vector<std::queue<std::shared_ptr<Signal>>> _outputValues;
 
     std::unique_ptr<internal::InOut> p;
 };

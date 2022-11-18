@@ -121,7 +121,7 @@ void SocketIn::SetUrl( std::string const& newUrl )
     }
 }
 
-void SocketIn::Process_( SignalBus const& inputs, SignalBus& outputs )
+void SocketIn::Process_( SignalBus& inputs, SignalBus& outputs )
 {
     auto url = inputs.GetValue<std::string>( 0 );
     if ( url )

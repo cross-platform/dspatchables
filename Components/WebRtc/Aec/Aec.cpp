@@ -85,7 +85,7 @@ Aec::Aec()
     SetOutputCount_( 1, { "out" } );
 }
 
-void Aec::Process_( SignalBus const& inputs, SignalBus& outputs )
+void Aec::Process_( SignalBus& inputs, SignalBus& outputs )
 {
     auto nearSignal = inputs.GetValue<std::vector<short>>( 0 );
     auto farSignal = inputs.GetValue<std::vector<short>>( 1 );

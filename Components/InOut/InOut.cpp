@@ -67,7 +67,7 @@ InOut::~InOut()
 {
 }
 
-void InOut::Process_( SignalBus const& inputs, SignalBus& outputs )
+void InOut::Process_( SignalBus& inputs, SignalBus& outputs )
 {
     std::lock_guard<std::mutex> lock( _mutex );
 
@@ -86,7 +86,7 @@ void InOut::Process_( SignalBus const& inputs, SignalBus& outputs )
 
         if ( !_outputValues[i].empty() )
         {
-            outputs.MoveSignal( i, _outputValues[i].front() );
+            outputs.MoveSignal( i, *_outputValues[i].front() );
             _outputValues[i].pop();
         }
     }
