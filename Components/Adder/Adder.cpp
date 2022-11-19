@@ -28,6 +28,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <Adder.h>
 
+#include <mutex>
+
 using namespace DSPatch;
 using namespace DSPatchables;
 
@@ -40,6 +42,8 @@ namespace internal
 
 class Adder
 {
+public:
+    std::mutex processMutex;
 };
 
 }  // namespace internal
@@ -57,19 +61,37 @@ Adder::Adder()
     SetOutputCount_( 1, { "out" } );
 }
 
+Adder::~Adder() = default;
+
+void Adder::SetInputCount( unsigned int inputCount )
+{
+    std::lock_guard<std::mutex> lock( p->processMutex );
+    SetInputCount_( inputCount );
+}
+
 void Adder::Process_( SignalBus& inputs, SignalBus& outputs )
 {
-    auto in1 = inputs.GetValue<std::vector<short>>( 0 );
-    auto in2 = inputs.GetValue<std::vector<short>>( 1 );
-
-    if ( !in1 || !in2 || in1->size() != in2->size() )
+    std::lock_guard<std::mutex> lock( p->processMutex );
+    auto in = inputs.GetValue<std::vector<short>>( 0 );
+    if ( !in )
     {
         return;
     }
 
-    for ( size_t i = 0; i < in1->size(); ++i )
+    const int signalCount = inputs.GetSignalCount();
+    for ( int i = 1; i < signalCount; ++i )
     {
-        ( *in1 )[i] += ( *in2 )[i];  // perform addition sample-by-sample
+        auto nextIn = inputs.GetValue<std::vector<short>>( i );
+        if ( !nextIn || in->size() != nextIn->size() )
+        {
+            return;
+        }
+
+        const size_t bufferSize = in->size();
+        for ( size_t s = 0; s < bufferSize; ++s )
+        {
+            ( *in )[s] += ( *nextIn )[s];  // perform addition sample-by-sample
+        }
     }
 
     outputs.MoveSignal( 0, inputs.GetSignal( 0 ) );  // move combined signal to output

@@ -43,10 +43,13 @@ class Gain;
 class DLLEXPORT Gain final : public Component
 {
 public:
-    Gain( float initGain );
+    Gain();
+    ~Gain();
 
     void SetGain( float gain );
     float GetGain() const;
+    void SetMute( bool muted );
+    bool GetMute() const;
 
 protected:
     virtual void Process_( SignalBus& inputs, SignalBus& outputs ) override;
@@ -55,7 +58,7 @@ private:
     std::unique_ptr<internal::Gain> p;
 };
 
-EXPORT_PLUGIN( Gain, 1.0f )
+EXPORT_PLUGIN( Gain )
 
 }  // namespace DSPatchables
 }  // namespace DSPatch

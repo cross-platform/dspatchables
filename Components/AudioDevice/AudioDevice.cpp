@@ -31,7 +31,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <RtAudio.h>
 
-#include <algorithm>
 #include <condition_variable>
 #include <cstring>
 
@@ -50,10 +49,7 @@ class AudioDevice
 public:
     AudioDevice()
     {
-        for ( unsigned int i = 0; i < audioStream.getDeviceCount(); ++i )
-        {
-            deviceList.emplace_back( audioStream.getDeviceInfo( i ) );
-        }
+        deviceList = audioStream.getDeviceIds();
     }
 
     void WaitForBuffer();
@@ -71,6 +67,15 @@ public:
 
     int DynamicCallback( void* inputBuffer, void* outputBuffer, RtAudioStreamStatus status );
 
+    static void SanitizeDeviceName( std::string& name )
+    {
+        std::replace_if(
+            name.begin(), name.end(), []( char c ) { return c == static_cast<char>( '\xd5' ); }, '\'' );
+
+        std::replace_if(
+            name.begin(), name.end(), []( char c ) { return !std::isprint( static_cast<unsigned char>( c ) ); }, '_' );
+    }
+
     std::vector<std::vector<short>> outputChannels;
     std::vector<std::vector<short>> inputChannels;
 
@@ -81,12 +86,12 @@ public:
     bool gotWaitReady = false;
     bool gotSyncReady = true;
 
-    int currentDeviceIndex = -1;
+    unsigned int currentDeviceId = 0;
     bool isStreaming = false;
-    int bufferSize = c_bufferSize;
-    int sampleRate = c_sampleRate;
+    unsigned int bufferSize = c_bufferSize;
+    unsigned int sampleRate = c_sampleRate;
 
-    std::vector<RtAudio::DeviceInfo> deviceList;
+    std::vector<unsigned int> deviceList;
     RtAudio::DeviceInfo currentDevice;
 
     RtAudio audioStream;
@@ -95,7 +100,7 @@ public:
 
     std::mutex availableMutex;
     std::mutex processMutex;
-    bool hasInputs = false;
+    bool isInputDevice = false;
     std::vector<std::string> nameHas;
     bool defaultIfNotFound = false;
     bool loopback = false;
@@ -115,8 +120,6 @@ AudioDevice::AudioDevice( bool isOutputDevice,
     : p( new internal::AudioDevice() )
 {
     SetDevice( isOutputDevice, deviceNameHas, defaultIfNotFound, loopback );
-
-    p->currentDeviceIndex = -1;
 }
 
 AudioDevice::~AudioDevice()
@@ -142,18 +145,14 @@ bool AudioDevice::Available()
 
     ReloadDevices();
 
-    for ( int i = 0; i < GetDeviceCount(); ++i )
+    for ( const auto id : p->deviceList )
     {
-        auto name = GetDeviceName( i );
-
-        std::transform( name.begin(), name.end(), name.begin(), ::tolower );
+        auto name = GetDeviceName( id );
 
         // check if the device name contains p->nameHas
         bool found = true;
-        for ( auto sub : p->nameHas )
+        for ( const auto& sub : p->nameHas )
         {
-            std::transform( sub.begin(), sub.end(), sub.begin(), ::tolower );
-
             if ( !sub.empty() && name.find( sub ) == std::string::npos )
             {
                 found = false;
@@ -164,17 +163,17 @@ bool AudioDevice::Available()
         // if the device name contains p->nameHas
         if ( found )
         {
-            if ( p->hasInputs && GetDeviceInputCount( i ) == 0 )
+            if ( p->isInputDevice && GetDeviceInputCount( id ) == 0 )
             {
                 continue;
             }
-            else if ( !p->hasInputs && GetDeviceInputCount( i ) != 0 )
+            else if ( !p->isInputDevice && GetDeviceOutputCount( id ) == 0 )
             {
                 continue;
             }
-            else if ( p->currentDevice.name != GetDeviceName( i ) )
+            else if ( p->currentDevice.name != GetDeviceName( id ) )
             {
-                SetDevice( i, p->loopback );
+                SetDevice( id, p->loopback );
                 p->callback( true );
             }
             p->notFoundNotified = false;
@@ -184,104 +183,96 @@ bool AudioDevice::Available()
 
     if ( p->defaultIfNotFound )
     {
-#if defined( __LINUX_ALSA__ )
-        for ( int i = 0; i < GetDeviceCount(); ++i )
+        if ( p->isInputDevice && !p->notFoundNotified )
         {
-            if ( i != GetDefaultOutputDevice() && i != GetDefaultInputDevice() && GetDeviceInputCount( i ) > 0 &&
-                 GetDeviceOutputCount( i ) > 0 )
-            {
-                if ( GetCurrentDevice() != i )
-                {
-                    p->notFoundNotified = true;
-                    for ( auto const& sub : p->nameHas )
-                    {
-                        std::cout << sub << " ";
-                    }
-                    std::cout << ( p->hasInputs ? "input device" : "output device" ) << " not found. " << std::endl;
-                    std::cout << "Switching to first x:y device: " << GetDeviceName( i ) << std::endl;
-                    SetDevice( i, p->loopback );
-                    p->callback( true );
-                    return true;
-                }
-            }
-        }
-#else
-        if ( p->hasInputs && !p->notFoundNotified )
-        {
-            int defaultInputDevice = GetDefaultInputDevice();
+            auto defaultInputDevice = GetDefaultInputDevice();
             if ( GetCurrentDevice() != defaultInputDevice )
             {
                 p->notFoundNotified = true;
+
+                std::stringstream log;
                 for ( auto const& sub : p->nameHas )
                 {
-                    std::cout << sub << " ";
+                    log << sub << " ";
                 }
-                std::cout << "input device not found." << std::endl;
-                std::cout << "Switching to default input device: " << GetDeviceName( defaultInputDevice ) << std::endl;
+                log << "input device not found. Switching to default input device: "
+                    << GetDeviceName( defaultInputDevice );
+                std::cout << log.str() << std::endl;
+
                 SetDevice( defaultInputDevice, p->loopback );
-                p->callback( true );
-                return true;
             }
         }
-        else if ( !p->hasInputs && !p->notFoundNotified )
+        else if ( !p->isInputDevice && !p->notFoundNotified )
         {
-            int defaultOutputDevice = GetDefaultOutputDevice();
+            auto defaultOutputDevice = GetDefaultOutputDevice();
             if ( GetCurrentDevice() != defaultOutputDevice )
             {
                 p->notFoundNotified = true;
+
+                std::stringstream log;
                 for ( auto const& sub : p->nameHas )
                 {
-                    std::cout << sub << " ";
+                    log << sub << " ";
                 }
-                std::cout << "output device not found." << std::endl;
-                std::cout << "Switching to default output device: " << GetDeviceName( defaultOutputDevice )
-                          << std::endl;
+                log << "output device not found. Switching to default output device: "
+                    << GetDeviceName( defaultOutputDevice );
+                std::cout << log.str() << std::endl;
+
                 SetDevice( defaultOutputDevice, p->loopback );
-                p->callback( true );
-                return true;
             }
         }
-#endif
+        return true;
     }
 
     if ( !p->notFoundNotified )
     {
         p->notFoundNotified = true;
+
+        std::stringstream log;
         for ( auto const& sub : p->nameHas )
         {
-            std::cout << sub << " ";
+            log << sub << " ";
         }
-        std::cout << ( p->hasInputs ? "input device" : "output device" ) << " not found. " << std::endl;
+        log << ( p->isInputDevice ? "input device" : "output device" ) << " not found.";
+        std::cout << log.str() << std::endl;
 
-        SetDevice( -1, false );
+        SetDevice( 0, false );
         p->callback( false );
     }
 
     return false;
 }
 
-bool AudioDevice::SetDevice( int deviceIndex, bool loopback )
+bool AudioDevice::SetDevice( unsigned int deviceId, bool loopback )
 {
-    if ( deviceIndex == -1 )
+    if ( deviceId == 0 )
     {
         p->StopStream();
-        p->currentDeviceIndex = deviceIndex;
+        p->currentDeviceId = deviceId;
         p->currentDevice = RtAudio::DeviceInfo();
 
         return true;
     }
-    else if ( deviceIndex >= 0 && deviceIndex < GetDeviceCount() )
+    else if ( std::find( p->deviceList.begin(), p->deviceList.end(), deviceId ) != p->deviceList.end() )
     {
-        std::cout << "Initialising " << GetDeviceName( deviceIndex ) << "..." << std::endl;
+        auto sampleRates = p->audioStream.getDeviceInfo( deviceId ).sampleRates;
+        if ( std::find( sampleRates.begin(), sampleRates.end(), p->sampleRate ) == sampleRates.end() )
+        {
+            std::cout << "Sample rate " << std::to_string( p->sampleRate ) << " not supported. Switching to " << std::to_string( sampleRates.back() ) << std::endl;
+            p->sampleRate = sampleRates.back();
+        }
+
+        std::cout << "Initialising " << GetDeviceName( deviceId ) << std::endl;
 
         p->StopStream();
 
-        p->currentDeviceIndex = deviceIndex;
-        p->currentDevice = p->deviceList[deviceIndex];
+        p->currentDeviceId = deviceId;
+        p->currentDevice = p->audioStream.getDeviceInfo( deviceId );
+        p->SanitizeDeviceName( p->currentDevice.name );
 
         // configure outputParams
-        p->outputParams.nChannels = p->deviceList[deviceIndex].outputChannels;
-        p->outputParams.deviceId = deviceIndex;
+        p->outputParams.nChannels = p->currentDevice.outputChannels;
+        p->outputParams.deviceId = deviceId;
 
         p->outputChannels.resize( p->outputParams.nChannels );
         SetInputCount_( p->outputParams.nChannels );
@@ -289,16 +280,16 @@ bool AudioDevice::SetDevice( int deviceIndex, bool loopback )
         // configure inputParams
         if ( loopback )
         {
-            p->inputParams.nChannels = p->deviceList[deviceIndex].outputChannels;
-            p->inputParams.deviceId = deviceIndex;
+            p->inputParams.nChannels = p->currentDevice.outputChannels;
+            p->inputParams.deviceId = deviceId;
 
             p->inputChannels.resize( p->inputParams.nChannels );
             SetOutputCount_( p->inputParams.nChannels );
         }
         else
         {
-            p->inputParams.nChannels = p->deviceList[deviceIndex].inputChannels;
-            p->inputParams.deviceId = deviceIndex;
+            p->inputParams.nChannels = p->currentDevice.inputChannels;
+            p->inputParams.deviceId = deviceId;
 
             p->inputChannels.resize( p->inputParams.nChannels );
             SetOutputCount_( p->inputParams.nChannels );
@@ -318,22 +309,36 @@ bool AudioDevice::SetDevice( bool isOutputDevice,
                              bool defaultIfNotFound,
                              bool loopback )
 {
-    std::lock_guard<std::mutex> processLock( p->processMutex );
-
     {
+        std::lock_guard<std::mutex> processLock( p->processMutex );
         std::lock_guard<std::mutex> availableLock( p->availableMutex );
 
-        if ( p->hasInputs == !isOutputDevice && p->nameHas == deviceNameHas &&
+        if ( p->isInputDevice == !isOutputDevice && p->nameHas == deviceNameHas &&
              p->defaultIfNotFound == defaultIfNotFound && p->loopback == loopback )
         {
             // Device already set, don't re-set unneccesarily
             return true;
         }
 
-        p->hasInputs = !isOutputDevice;
-        p->nameHas = deviceNameHas;
+        p->isInputDevice = !isOutputDevice;
         p->defaultIfNotFound = defaultIfNotFound;
         p->loopback = loopback;
+
+        if ( !deviceNameHas.empty() )
+        {
+            p->nameHas = deviceNameHas;
+        }
+        else
+        {
+            if ( isOutputDevice )
+            {
+                p->nameHas = { GetDeviceName( GetDefaultOutputDevice() ) };
+            }
+            else
+            {
+                p->nameHas = { GetDeviceName( GetDefaultInputDevice() ) };
+            }
+        }
     }
 
     return Available();
@@ -341,18 +346,15 @@ bool AudioDevice::SetDevice( bool isOutputDevice,
 
 bool AudioDevice::ReloadDevices()
 {
-    std::vector<RtAudio::DeviceInfo> newDeviceList;
-    auto deviceCount = p->audioStream.getDeviceCount();
+    auto newDeviceList = p->audioStream.getDeviceIds();
 
     bool devicesChanged = false;
-
-    for ( unsigned int i = 0; i < deviceCount; ++i )
+    for ( size_t i = 0; i < newDeviceList.size(); ++i )
     {
-        newDeviceList.emplace_back( p->audioStream.getDeviceInfo( i ) );
-
-        if ( i >= p->deviceList.size() || newDeviceList[i].name != p->deviceList[i].name )
+        if ( i >= p->deviceList.size() || newDeviceList[i] != p->deviceList[i] )
         {
             devicesChanged = true;
+            break;
         }
     }
 
@@ -365,47 +367,49 @@ bool AudioDevice::ReloadDevices()
     return false;
 }
 
-std::string AudioDevice::GetDeviceName( int deviceIndex ) const
+std::string AudioDevice::GetDeviceName( unsigned int deviceId ) const
 {
-    if ( deviceIndex >= 0 && deviceIndex < GetDeviceCount() )
-    {
-        return p->deviceList[deviceIndex].name;
-    }
-
-    return "";
+    auto deviceName = p->audioStream.getDeviceInfo( deviceId ).name;
+    p->SanitizeDeviceName( deviceName );
+    return deviceName;
 }
 
-int AudioDevice::GetDeviceInputCount( int deviceIndex ) const
+unsigned int AudioDevice::GetDeviceInputCount( unsigned int deviceId ) const
 {
-    return p->deviceList[deviceIndex].inputChannels;
+    return p->audioStream.getDeviceInfo( deviceId ).inputChannels;
 }
 
-int AudioDevice::GetDeviceOutputCount( int deviceIndex ) const
+unsigned int AudioDevice::GetDeviceOutputCount( unsigned int deviceId ) const
 {
-    return p->deviceList[deviceIndex].outputChannels;
+    return p->audioStream.getDeviceInfo( deviceId ).outputChannels;
 }
 
-int AudioDevice::GetDefaultInputDevice() const
+std::vector<unsigned int> AudioDevice::GetSampleRates( unsigned int deviceId ) const
+{
+    return p->audioStream.getDeviceInfo( deviceId ).sampleRates;
+}
+
+std::vector<unsigned int> AudioDevice::GetDeviceIds() const
+{
+    return p->deviceList;
+}
+
+unsigned int AudioDevice::GetDefaultInputDevice() const
 {
     return p->audioStream.getDefaultInputDevice();
 }
 
-int AudioDevice::GetDefaultOutputDevice() const
+unsigned int AudioDevice::GetDefaultOutputDevice() const
 {
     return p->audioStream.getDefaultOutputDevice();
 }
 
-int AudioDevice::GetCurrentDevice() const
+unsigned int AudioDevice::GetCurrentDevice() const
 {
-    return p->currentDeviceIndex;
+    return p->currentDeviceId;
 }
 
-int AudioDevice::GetDeviceCount() const
-{
-    return p->deviceList.size();
-}
-
-void AudioDevice::SetBufferSize( int bufferSize )
+unsigned int AudioDevice::SetBufferSize( unsigned int bufferSize )
 {
     p->StopStream();
 
@@ -416,13 +420,22 @@ void AudioDevice::SetBufferSize( int bufferSize )
     }
 
     p->StartStream();
+    return p->bufferSize;
 }
 
-void AudioDevice::SetSampleRate( int sampleRate )
+bool AudioDevice::SetSampleRate( unsigned int sampleRate )
 {
+    if ( std::find( p->currentDevice.sampleRates.begin(), p->currentDevice.sampleRates.end(), sampleRate ) ==
+         p->currentDevice.sampleRates.end() )
+    {
+        return false;
+    }
+
     p->StopStream();
     p->sampleRate = sampleRate;
     p->StartStream();
+
+    return true;
 }
 
 bool AudioDevice::IsStreaming() const
@@ -430,12 +443,12 @@ bool AudioDevice::IsStreaming() const
     return p->isStreaming;
 }
 
-int AudioDevice::GetBufferSize() const
+unsigned int AudioDevice::GetBufferSize() const
 {
     return p->bufferSize;
 }
 
-int AudioDevice::GetSampleRate() const
+unsigned int AudioDevice::GetSampleRate() const
 {
     return p->sampleRate;
 }
@@ -447,7 +460,7 @@ void AudioDevice::ShowWarnings( bool enabled )
 
 void AudioDevice::Process_( SignalBus& inputs, SignalBus& outputs )
 {
-    std::lock_guard<std::mutex> processLock( p->processMutex );
+    std::unique_lock<std::mutex> processLock( p->processMutex );
 
     // Wait until the sound card is ready for the next set of buffers
     // ==============================================================
@@ -459,6 +472,7 @@ void AudioDevice::Process_( SignalBus& inputs, SignalBus& outputs )
                  std::cv_status::timeout )
             {
                 lock.unlock();
+                processLock.unlock();
                 if ( !Available() && IsStreaming() )
                 {
                     std::cout << p->currentDevice.name << " disconnected." << std::endl;
@@ -469,24 +483,13 @@ void AudioDevice::Process_( SignalBus& inputs, SignalBus& outputs )
         p->gotSyncReady = false;  // reset the release flag
     }
 
-    // Synchronise buffer size with the size of incoming buffers
-    // =========================================================
-    auto buffer = inputs.GetValue<std::vector<short>>( 0 );
-    if ( buffer )
-    {
-        if ( GetBufferSize() != (int)buffer->size() && !buffer->empty() )
-        {
-            SetBufferSize( buffer->size() );
-            return;
-        }
-    }
-
     // Retrieve incoming component buffers for the sound card to output
     // ================================================================
-    for ( size_t i = 0; i < p->outputChannels.size(); ++i )
+    const size_t outputCount = p->outputChannels.size();
+    for ( size_t i = 0; i < outputCount; ++i )
     {
-        buffer = inputs.GetValue<std::vector<short>>( i );
-        if ( buffer )
+        auto buffer = inputs.GetValue<std::vector<short>>( (int)i );
+        if ( buffer && buffer->size() == p->bufferSize )
         {
             p->outputChannels[i] = *buffer;
         }
@@ -498,9 +501,10 @@ void AudioDevice::Process_( SignalBus& inputs, SignalBus& outputs )
 
     // Retrieve incoming sound card buffers for the component to output
     // ================================================================
-    for ( size_t i = 0; i < p->inputChannels.size(); ++i )
+    const size_t inputCount = p->inputChannels.size();
+    for ( size_t i = 0; i < inputCount; ++i )
     {
-        outputs.SetValue( i, p->inputChannels[i] );
+        outputs.SetValue( (int)i, p->inputChannels[i] );
     }
 
     // Inform the sound card that buffers are now ready
@@ -559,13 +563,11 @@ void DSPatchables::internal::AudioDevice::StartStream()
     }
 
     RtAudio::StreamOptions options;
-#ifdef NDEBUG
+    options.flags = RTAUDIO_NONINTERLEAVED;
     options.flags |= RTAUDIO_SCHEDULE_REALTIME;
-#endif
-    options.flags |= RTAUDIO_NONINTERLEAVED;
 
-    audioStream.openStream( outParams, inParams, RTAUDIO_SINT16, sampleRate, (unsigned int*)&bufferSize,
-                            &StaticCallback, this, &options );
+    audioStream.openStream( outParams, inParams, RTAUDIO_SINT16, sampleRate, &bufferSize, &StaticCallback, this,
+                            &options );
 
     isStreaming = true;
 
@@ -575,17 +577,19 @@ void DSPatchables::internal::AudioDevice::StartStream()
 int DSPatchables::internal::AudioDevice::StaticCallback(
     void* outputBuffer, void* inputBuffer, unsigned int, double, RtAudioStreamStatus status, void* userData )
 {
-    return ( reinterpret_cast<AudioDevice*>( userData ) )->DynamicCallback( inputBuffer, outputBuffer, status );
+    return ( static_cast<AudioDevice*>( userData ) )->DynamicCallback( inputBuffer, outputBuffer, status );
 }
 
-int DSPatchables::internal::AudioDevice::DynamicCallback( void* inputBuffer, void* outputBuffer, RtAudioStreamStatus )
+int DSPatchables::internal::AudioDevice::DynamicCallback( void* inputBuffer,
+                                                              void* outputBuffer,
+                                                              RtAudioStreamStatus )
 {
     WaitForBuffer();
 
     if ( isStreaming )
     {
-        short* shortOutput = (short*)outputBuffer;
-        short* shortInput = (short*)inputBuffer;
+        short* shortOutput = static_cast<short*>( outputBuffer );
+        short* shortInput = static_cast<short*>( inputBuffer );
 
         if ( outputBuffer != nullptr )
         {
@@ -610,11 +614,6 @@ int DSPatchables::internal::AudioDevice::DynamicCallback( void* inputBuffer, voi
                 }
             }
         }
-    }
-    else
-    {
-        SyncBuffer();
-        return 1;
     }
 
     SyncBuffer();

@@ -28,6 +28,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <Gain.h>
 
+#include <algorithm>
+#include <atomic>
+
 using namespace DSPatch;
 using namespace DSPatchables;
 
@@ -41,25 +44,22 @@ namespace internal
 class Gain
 {
 public:
-    Gain( float initGain )
-    {
-        gain = initGain;
-    }
-
-    float gain;
+    std::atomic<float> gain = 1.0f;
+    std::atomic<bool> muted = false;
 };
 
 }  // namespace internal
 }  // namespace DSPatchables
 }  // namespace DSPatch
 
-Gain::Gain( float initGain )
-    : Component( ProcessOrder::OutOfOrder )
-    , p( new internal::Gain( initGain ) )
+Gain::Gain()
+    : p( new internal::Gain() )
 {
     SetInputCount_( 2, { "in", "gain" } );
     SetOutputCount_( 1, { "out" } );
 }
+
+Gain::~Gain() = default;
 
 void Gain::SetGain( float gain )
 {
@@ -69,6 +69,16 @@ void Gain::SetGain( float gain )
 float Gain::GetGain() const
 {
     return p->gain;
+}
+
+void Gain::SetMute( bool muted )
+{
+    p->muted = muted;
+}
+
+bool Gain::GetMute() const
+{
+    return p->muted;
 }
 
 void Gain::Process_( SignalBus& inputs, SignalBus& outputs )
@@ -85,9 +95,14 @@ void Gain::Process_( SignalBus& inputs, SignalBus& outputs )
         p->gain = *gain;
     }
 
-    for ( auto& inSample : *in )
+    // apply gain sample-by-sample
+    if ( p->muted )
     {
-        inSample *= p->gain;  // apply gain sample-by-sample
+        std::for_each( ( *in ).begin(), ( *in ).end(), []( short& sample ) { sample = 0.0f; } );
+    }
+    else
+    {
+        std::for_each( ( *in ).begin(), ( *in ).end(), [this]( short& sample ) { sample *= p->gain; } );
     }
 
     outputs.MoveSignal( 0, inputs.GetSignal( 0 ) );  // move gained input signal to output

@@ -44,6 +44,9 @@ class DLLEXPORT Adder final : public Component
 {
 public:
     Adder();
+    ~Adder();
+
+    void SetInputCount( unsigned int inputCount );
 
 protected:
     virtual void Process_( SignalBus& inputs, SignalBus& outputs ) override;

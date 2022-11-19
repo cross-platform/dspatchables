@@ -42,19 +42,19 @@ namespace internal
 class AudioDevice;
 }
 
-class DLLEXPORT AudioDevice : public Component
+class DLLEXPORT AudioDevice final : public Component
 {
 public:
-    AudioDevice( bool isOutputDevice,
-                 std::vector<std::string> const& deviceNameHas,
-                 bool defaultIfNotFound,
-                 bool loopback );
-    virtual ~AudioDevice();
+    explicit AudioDevice( bool isOutputDevice = true,
+                          std::vector<std::string> const& deviceNameHas = std::vector<std::string>{},
+                          bool defaultIfNotFound = true,
+                          bool loopback = false );
+    ~AudioDevice();
 
     bool Available();
     void SetAvailableCallback( std::function<void( bool )> const& callback );
 
-    bool SetDevice( int deviceIndex, bool loopback );
+    bool SetDevice( unsigned int deviceId, bool loopback );
     bool SetDevice( bool isOutputDevice,
                     std::vector<std::string> const& deviceNameHas,
                     bool defaultIfNotFound,
@@ -62,21 +62,22 @@ public:
 
     bool ReloadDevices();
 
-    std::string GetDeviceName( int deviceIndex ) const;
-    int GetDeviceInputCount( int deviceIndex ) const;
-    int GetDeviceOutputCount( int deviceIndex ) const;
+    std::string GetDeviceName( unsigned int deviceId ) const;
+    unsigned int GetDeviceInputCount( unsigned int deviceId ) const;
+    unsigned int GetDeviceOutputCount( unsigned int deviceId ) const;
+    std::vector<unsigned int> GetSampleRates( unsigned int deviceId ) const;
 
-    int GetDefaultInputDevice() const;
-    int GetDefaultOutputDevice() const;
-    int GetCurrentDevice() const;
-    int GetDeviceCount() const;
+    std::vector<unsigned int> GetDeviceIds() const;
+    unsigned int GetDefaultInputDevice() const;
+    unsigned int GetDefaultOutputDevice() const;
+    unsigned int GetCurrentDevice() const;
 
-    void SetBufferSize( int bufferSize );
-    void SetSampleRate( int sampleRate );
+    unsigned int SetBufferSize( unsigned int bufferSize );
+    bool SetSampleRate( unsigned int sampleRate );
 
     bool IsStreaming() const;
-    int GetBufferSize() const;
-    int GetSampleRate() const;
+    unsigned int GetBufferSize() const;
+    unsigned int GetSampleRate() const;
 
     void ShowWarnings( bool enabled );
 
