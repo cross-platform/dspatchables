@@ -1,6 +1,6 @@
 /******************************************************************************
 AudioDevice DSPatch Component
-Copyright (c) 2021, Marcus Tomlinson
+Copyright (c) 2022, Marcus Tomlinson
 
 BSD 2-Clause License
 
@@ -55,10 +55,7 @@ public:
     void SetAvailableCallback( std::function<void( bool )> const& callback );
 
     bool SetDevice( unsigned int deviceId, bool loopback );
-    bool SetDevice( bool isOutputDevice,
-                    std::vector<std::string> const& deviceNameHas,
-                    bool defaultIfNotFound,
-                    bool loopback );
+    bool SetDevice( bool isOutputDevice, std::vector<std::string> const& deviceNameHas, bool defaultIfNotFound, bool loopback );
 
     bool ReloadDevices();
 

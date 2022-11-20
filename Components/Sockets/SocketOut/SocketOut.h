@@ -1,6 +1,6 @@
 /******************************************************************************
 SocketOut DSPatch Component
-Copyright (c) 2021, Marcus Tomlinson
+Copyright (c) 2022, Marcus Tomlinson
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License

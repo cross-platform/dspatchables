@@ -1,6 +1,6 @@
 /******************************************************************************
 WaveReader DSPatch Component
-Copyright (c) 2021, Marcus Tomlinson
+Copyright (c) 2022, Marcus Tomlinson
 
 BSD 2-Clause License
 
@@ -46,7 +46,7 @@ namespace internal
 class WaveReader
 {
 public:
-    WaveReader( std::string const& fileName )
+    explicit WaveReader( std::string const& fileName )
     {
         streamData.resize( bufferSize );
 

@@ -1,6 +1,6 @@
 /******************************************************************************
 SocketIn DSPatch Component
-Copyright (c) 2021, Marcus Tomlinson
+Copyright (c) 2022, Marcus Tomlinson
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -28,11 +28,11 @@ extern "C"
 static void fn( mg_connection* c, int ev, void* ev_data, void* data )
 {
     auto buffer = (std::vector<short>*)data;
-    auto wm = (mg_ws_message*)ev_data;
+    auto wm = static_cast<mg_ws_message*>( ev_data );
 
     if ( ev == MG_EV_ERROR )
     {
-        LOG( LL_ERROR, ( "%p %s", c->fd, (char*)ev_data ) );
+        LOG( LL_ERROR, ( "%p %s", c->fd, static_cast<char*>( ev_data ) ) );
     }
     else if ( ev == MG_EV_WS_OPEN )
     {
@@ -46,7 +46,7 @@ static void fn( mg_connection* c, int ev, void* ev_data, void* data )
     {
         if ( wm->data.len != 0 )
         {
-            auto short_data = (const short*)wm->data.ptr;
+            auto short_data = reinterpret_cast<const short*>( wm->data.ptr );
 
             *buffer = {};
             for ( size_t i = 0; i < wm->data.len / 2; ++i )

@@ -1,6 +1,6 @@
 /******************************************************************************
 SocketOut DSPatch Component
-Copyright (c) 2021, Marcus Tomlinson
+Copyright (c) 2022, Marcus Tomlinson
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -30,11 +30,11 @@ extern "C"
 static void fn( mg_connection* c, int ev, void* ev_data, void* data )
 {
     auto buffer = (std::vector<short>*)data;
-    auto hm = (mg_http_message*)ev_data;
+    auto hm = static_cast<mg_http_message*>( ev_data );
 
     if ( ev == MG_EV_ERROR )
     {
-        LOG( LL_ERROR, ( "%p %s", c->fd, (char*)ev_data ) );
+        LOG( LL_ERROR, ( "%p %s", c->fd, static_cast<char*>( ev_data ) ) );
     }
     else if ( ev == MG_EV_HTTP_MSG && std::string( hm->message.ptr ).find( "websocket" ) != std::string::npos )
     {
@@ -76,7 +76,7 @@ public:
     }
 
     mg_mgr mgr;
-    mg_connection *c, *hc;
+    mg_connection* c;
     std::vector<short> buffer;
     std::string port;
 };

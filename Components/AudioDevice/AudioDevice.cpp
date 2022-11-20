@@ -1,6 +1,6 @@
 /******************************************************************************
 AudioDevice DSPatch Component
-Copyright (c) 2021, Marcus Tomlinson
+Copyright (c) 2022, Marcus Tomlinson
 
 BSD 2-Clause License
 
@@ -58,12 +58,8 @@ public:
     void StopStream();
     void StartStream();
 
-    static int StaticCallback( void* outputBuffer,
-                               void* inputBuffer,
-                               unsigned int nBufferFrames,
-                               double streamTime,
-                               unsigned int status,
-                               void* userData );
+    static int StaticCallback(
+        void* outputBuffer, void* inputBuffer, unsigned int nBufferFrames, double streamTime, unsigned int status, void* userData );
 
     int DynamicCallback( void* inputBuffer, void* outputBuffer, RtAudioStreamStatus status );
 
@@ -113,10 +109,7 @@ public:
 }  // namespace DSPatchables
 }  // namespace DSPatch
 
-AudioDevice::AudioDevice( bool isOutputDevice,
-                          std::vector<std::string> const& deviceNameHas,
-                          bool defaultIfNotFound,
-                          bool loopback )
+AudioDevice::AudioDevice( bool isOutputDevice, std::vector<std::string> const& deviceNameHas, bool defaultIfNotFound, bool loopback )
     : p( new internal::AudioDevice() )
 {
     SetDevice( isOutputDevice, deviceNameHas, defaultIfNotFound, loopback );
@@ -195,8 +188,7 @@ bool AudioDevice::Available()
                 {
                     log << sub << " ";
                 }
-                log << "input device not found. Switching to default input device: "
-                    << GetDeviceName( defaultInputDevice );
+                log << "input device not found. Switching to default input device: " << GetDeviceName( defaultInputDevice );
                 std::cout << log.str() << std::endl;
 
                 SetDevice( defaultInputDevice, p->loopback );
@@ -214,8 +206,7 @@ bool AudioDevice::Available()
                 {
                     log << sub << " ";
                 }
-                log << "output device not found. Switching to default output device: "
-                    << GetDeviceName( defaultOutputDevice );
+                log << "output device not found. Switching to default output device: " << GetDeviceName( defaultOutputDevice );
                 std::cout << log.str() << std::endl;
 
                 SetDevice( defaultOutputDevice, p->loopback );
@@ -258,7 +249,8 @@ bool AudioDevice::SetDevice( unsigned int deviceId, bool loopback )
         auto sampleRates = p->audioStream.getDeviceInfo( deviceId ).sampleRates;
         if ( std::find( sampleRates.begin(), sampleRates.end(), p->sampleRate ) == sampleRates.end() )
         {
-            std::cout << "Sample rate " << std::to_string( p->sampleRate ) << " not supported. Switching to " << std::to_string( sampleRates.back() ) << std::endl;
+            std::cout << "Sample rate " << std::to_string( p->sampleRate ) << " not supported. Switching to "
+                      << std::to_string( sampleRates.back() ) << std::endl;
             p->sampleRate = sampleRates.back();
         }
 
@@ -304,17 +296,14 @@ bool AudioDevice::SetDevice( unsigned int deviceId, bool loopback )
     return false;
 }
 
-bool AudioDevice::SetDevice( bool isOutputDevice,
-                             std::vector<std::string> const& deviceNameHas,
-                             bool defaultIfNotFound,
-                             bool loopback )
+bool AudioDevice::SetDevice( bool isOutputDevice, std::vector<std::string> const& deviceNameHas, bool defaultIfNotFound, bool loopback )
 {
     {
         std::lock_guard<std::mutex> processLock( p->processMutex );
         std::lock_guard<std::mutex> availableLock( p->availableMutex );
 
-        if ( p->isInputDevice == !isOutputDevice && p->nameHas == deviceNameHas &&
-             p->defaultIfNotFound == defaultIfNotFound && p->loopback == loopback )
+        if ( p->isInputDevice == !isOutputDevice && p->nameHas == deviceNameHas && p->defaultIfNotFound == defaultIfNotFound &&
+             p->loopback == loopback )
         {
             // Device already set, don't re-set unneccesarily
             return true;
@@ -468,8 +457,7 @@ void AudioDevice::Process_( SignalBus& inputs, SignalBus& outputs )
         std::unique_lock<std::mutex> lock( p->syncMutex );
         if ( !p->gotSyncReady )  // if haven't already got the release
         {
-            if ( p->syncCondt.wait_for( lock, std::chrono::milliseconds( c_bufferWaitTimeoutMs ) ) ==
-                 std::cv_status::timeout )
+            if ( p->syncCondt.wait_for( lock, std::chrono::milliseconds( c_bufferWaitTimeoutMs ) ) == std::cv_status::timeout )
             {
                 lock.unlock();
                 processLock.unlock();
@@ -566,8 +554,7 @@ void DSPatchables::internal::AudioDevice::StartStream()
     options.flags = RTAUDIO_NONINTERLEAVED;
     options.flags |= RTAUDIO_SCHEDULE_REALTIME;
 
-    audioStream.openStream( outParams, inParams, RTAUDIO_SINT16, sampleRate, &bufferSize, &StaticCallback, this,
-                            &options );
+    audioStream.openStream( outParams, inParams, RTAUDIO_SINT16, sampleRate, &bufferSize, &StaticCallback, this, &options );
 
     isStreaming = true;
 
@@ -580,9 +567,7 @@ int DSPatchables::internal::AudioDevice::StaticCallback(
     return ( static_cast<AudioDevice*>( userData ) )->DynamicCallback( inputBuffer, outputBuffer, status );
 }
 
-int DSPatchables::internal::AudioDevice::DynamicCallback( void* inputBuffer,
-                                                              void* outputBuffer,
-                                                              RtAudioStreamStatus )
+int DSPatchables::internal::AudioDevice::DynamicCallback( void* inputBuffer, void* outputBuffer, RtAudioStreamStatus )
 {
     WaitForBuffer();
 

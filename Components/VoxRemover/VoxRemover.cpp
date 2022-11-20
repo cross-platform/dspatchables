@@ -1,6 +1,6 @@
 /******************************************************************************
 VoxRemover DSPatch Component
-Copyright (c) 2021, Marcus Tomlinson
+Copyright (c) 2022, Marcus Tomlinson
 
 BSD 2-Clause License
 
@@ -154,8 +154,7 @@ void VoxRemover::_FftSignalBuffers()
 
 void VoxRemover::_ProcessSpectralBuffers()
 {
-    float _frq, _magL, _phiL, _magR, _phiR;  // frequency, magnitudes, and phases pulled from FFT result
-    _frq = 0;
+    float _frq = 0;  // frequency
 
     for ( size_t i = 2; i < _specBufL.size(); i += 2 )
     {
@@ -164,14 +163,14 @@ void VoxRemover::_ProcessSpectralBuffers()
 
         // retrieve magnitudes (L & R)
         // [i] = real & [i+1] = imaginary
-        _magL = 2.0f * sqrt( _specBufL[i] * _specBufL[i] + _specBufL[i + 1] * _specBufL[i + 1] );
-        _magR = 2.0f * sqrt( _specBufR[i] * _specBufR[i] + _specBufR[i + 1] * _specBufR[i + 1] );
+        // float _magL = 2.0f * sqrt( _specBufL[i] * _specBufL[i] + _specBufL[i + 1] * _specBufL[i + 1] );
+        // float _magR = 2.0f * sqrt( _specBufR[i] * _specBufR[i] + _specBufR[i + 1] * _specBufR[i + 1] );
 
         // retrieve phases (L & R)
         // atan(i,r) gives (-pi to +pi), so add pi and divide by 2pi to get (0 to 1), then shift left 0.25 (90deg) to
         // convert cos phi to sin phi
-        _phiL = ( ( atan2( _specBufL[i + 1], _specBufL[i] ) + c_pi ) / c_twoPi ) - 0.25f;
-        _phiR = ( ( atan2( _specBufR[i + 1], _specBufR[i] ) + c_pi ) / c_twoPi ) - 0.25f;
+        float _phiL = ( ( atan2( _specBufL[i + 1], _specBufL[i] ) + c_pi ) / c_twoPi ) - 0.25f;
+        float _phiR = ( ( atan2( _specBufR[i + 1], _specBufR[i] ) + c_pi ) / c_twoPi ) - 0.25f;
 
         // convert phase to a value between 0 and 1 (L & R)
         if ( _phiL < 0 )

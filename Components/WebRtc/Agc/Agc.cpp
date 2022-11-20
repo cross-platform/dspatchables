@@ -1,6 +1,6 @@
 /******************************************************************************
 Agc DSPatch Component
-Copyright (c) 2021, Marcus Tomlinson
+Copyright (c) 2022, Marcus Tomlinson
 
 BSD 2-Clause License
 
@@ -45,7 +45,7 @@ namespace internal
 class Agc
 {
 public:
-    Agc( bool enableNoiseSuppression )
+    explicit Agc( bool enableNoiseSuppression )
         : apm( webrtc::AudioProcessing::Create() )
     {
         apm->Initialize();
