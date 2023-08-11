@@ -94,5 +94,5 @@ void Adder::Process_( SignalBus& inputs, SignalBus& outputs )
         }
     }
 
-    outputs.MoveSignal( 0, inputs.GetSignal( 0 ) );  // move combined signal to output
+    outputs.MoveSignal( 0, *inputs.GetSignal( 0 ) );  // move combined signal to output
 }

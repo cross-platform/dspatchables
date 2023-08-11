@@ -105,5 +105,5 @@ void Gain::Process_( SignalBus& inputs, SignalBus& outputs )
         std::for_each( ( *in ).begin(), ( *in ).end(), [this]( short& sample ) { sample *= p->gain; } );
     }
 
-    outputs.MoveSignal( 0, inputs.GetSignal( 0 ) );  // move gained input signal to output
+    outputs.MoveSignal( 0, *inputs.GetSignal( 0 ) );  // move gained input signal to output
 }

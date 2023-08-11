@@ -76,7 +76,7 @@ void InOut::Process_( SignalBus& inputs, SignalBus& outputs )
         // put component inputs into _inputValues
 
         auto s = std::make_shared<Signal>();
-        s->MoveSignal( inputs.GetSignal( i ) );
+        s->MoveSignal( *inputs.GetSignal( i ) );
         _inputValues[i].push( s );
     }
 

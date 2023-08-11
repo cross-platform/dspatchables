@@ -93,7 +93,7 @@ void Aec::Process_( SignalBus& inputs, SignalBus& outputs )
     // if we only have a nearSignal...
     if ( nearSignal && !farSignal )
     {
-        outputs.MoveSignal( 0, inputs.GetSignal( 0 ) );  // ...move just the nearSignal to output
+        outputs.MoveSignal( 0, *inputs.GetSignal( 0 ) );  // ...move just the nearSignal to output
         return;
     }
     else if ( !nearSignal || !farSignal )
