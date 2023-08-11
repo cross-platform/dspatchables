@@ -11,7 +11,7 @@
     RtAudio WWW site: http://www.music.mcgill.ca/~gary/rtaudio/
 
     RtAudio: realtime audio i/o C++ classes
-    Copyright (c) 2001-2022 Gary P. Scavone
+    Copyright (c) 2001-2023 Gary P. Scavone
 
     Permission is hereby granted, free of charge, to any person
     obtaining a copy of this software and associated documentation files
@@ -39,7 +39,7 @@
 */
 /************************************************************************/
 
-// RtAudio: Version 6.0.0beta1
+// RtAudio: Version 6.0.1
 
 #include "RtAudio.h"
 #include <iostream>
@@ -48,6 +48,12 @@
 #include <climits>
 #include <cmath>
 #include <algorithm>
+#include <codecvt>
+#include <locale>
+
+#if defined(_WIN32)
+#include <windows.h>
+#endif
 
 // Static variable definitions.
 const unsigned int RtApi::MAX_SAMPLE_RATES = 14;
@@ -56,34 +62,27 @@ const unsigned int RtApi::SAMPLE_RATES[] = {
   32000, 44100, 48000, 88200, 96000, 176400, 192000
 };
 
-#if defined(_WIN32) || defined(__CYGWIN__)
+template<typename T> inline
+std::string convertCharPointerToStdString(const T *text);
+
+template<> inline
+std::string convertCharPointerToStdString(const char *text)
+{
+  return text;
+}
+
+template<> inline
+std::string convertCharPointerToStdString(const wchar_t *text)
+{
+  return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>>{}.to_bytes(text);
+}
+
+#if defined(_MSC_VER)
   #define MUTEX_INITIALIZE(A) InitializeCriticalSection(A)
   #define MUTEX_DESTROY(A)    DeleteCriticalSection(A)
   #define MUTEX_LOCK(A)       EnterCriticalSection(A)
   #define MUTEX_UNLOCK(A)     LeaveCriticalSection(A)
-
-  #include "tchar.h"
-
-  template<typename T> inline
-  std::string convertCharPointerToStdString(const T *text);
-
-  template<> inline
-  std::string convertCharPointerToStdString(const char *text)
-  {
-    return std::string(text);
-  }
-
-  template<> inline
-  std::string convertCharPointerToStdString(const wchar_t *text)
-  {
-    int length = WideCharToMultiByte(CP_UTF8, 0, text, -1, NULL, 0, NULL, NULL);
-    std::string s( length-1, '\0' );
-    WideCharToMultiByte(CP_UTF8, 0, text, -1, &s[0], length, NULL, NULL);
-    return s;
-  }
-
-#elif defined(__unix__) || defined(__APPLE__)
-  // pthread API
+#else
   #define MUTEX_INITIALIZE(A) pthread_mutex_init(A, NULL)
   #define MUTEX_DESTROY(A)    pthread_mutex_destroy(A)
   #define MUTEX_LOCK(A)       pthread_mutex_lock(A)
@@ -298,7 +297,7 @@ public:
   void callbackEvent( void );
 
   private:
-  std::vector< std::string > deviceIds_;
+  std::vector<std::pair<std::string, unsigned int>> deviceIdPairs_;
   
   void probeDevices( void ) override;
   bool probeDeviceInfo( RtAudio::DeviceInfo &info, std::string name );
@@ -1408,6 +1407,8 @@ static OSStatus callbackHandler( AudioDeviceID inDevice,
                                  void* infoPointer )
 {
   CallbackInfo *info = (CallbackInfo *) infoPointer;
+  if(info == NULL || info->object == NULL)
+    return kAudioHardwareUnspecifiedError;
 
   RtApiCore *object = (RtApiCore *) info->object;
   if ( object->callbackEvent( inDevice, inInputData, outOutputData ) == false )
@@ -3324,6 +3325,7 @@ static ASIOCallbacks asioCallbacks;
 static ASIODriverInfo driverInfo;
 static CallbackInfo *asioCallbackInfo;
 static bool asioXRun;
+static bool streamOpen = false; // Tracks whether any instance of RtAudio has a stream open
 
 struct AsioHandle {
   int drainCounter;       // Tracks callback counts when draining
@@ -3348,12 +3350,19 @@ RtApiAsio :: RtApiAsio()
   coInitialized_ = false;
   HRESULT hr = CoInitialize( NULL ); 
   if ( FAILED(hr) ) {
-    errorText_ = "RtApiAsio::ASIO requires a single-threaded appartment. Call CoInitializeEx(0,COINIT_APARTMENTTHREADED)";
+    errorText_ = "RtApiAsio::ASIO requires a single-threaded apartment. Call CoInitializeEx(0,COINIT_APARTMENTTHREADED)";
     error( RTAUDIO_WARNING );
   }
   coInitialized_ = true;
 
-  drivers.removeCurrentDriver();
+  // Check whether another RtAudio instance has an ASIO stream open.
+  if ( streamOpen ) {
+    errorText_ = "RtApiAsio(): Another RtAudio ASIO stream is open, functionality may be limited.";
+    error( RTAUDIO_WARNING );
+  }
+  else
+    drivers.removeCurrentDriver();
+
   driverInfo.asioVersion = 2;
 
   // See note in DirectSound implementation about GetDesktopWindow().
@@ -3370,6 +3379,12 @@ void RtApiAsio :: probeDevices( void )
 {
   // See list of required functionality in RtApi::probeDevices().
 
+  if ( streamOpen ) {
+    errorText_ = "RtApiAsio::probeDevices: Another RtAudio ASIO stream is open, cannot probe devices.";
+    error( RTAUDIO_WARNING );
+    return;
+  }
+    
   unsigned int nDevices = drivers.asioGetNumDev();
   if ( nDevices == 0 ) {
     deviceList_.clear();
@@ -3415,9 +3430,13 @@ void RtApiAsio :: probeDevices( void )
 
   // Asio doesn't provide default devices so call the getDefault
   // functions, which will set the first available input and output
-  // devices as the defaults.
-  getDefaultInputDevice();
-  getDefaultOutputDevice();
+  // devices as the defaults. Don't call getDefaultXXXDevice if
+  // deviceList is empty.
+  if(deviceList_.size() > 0)
+  {
+    getDefaultInputDevice();
+    getDefaultOutputDevice();
+  }
 }
 
 bool RtApiAsio :: probeDeviceInfo( RtAudio::DeviceInfo &info )
@@ -3431,6 +3450,7 @@ bool RtApiAsio :: probeDeviceInfo( RtAudio::DeviceInfo &info )
 
   ASIOError result = ASIOInit( &driverInfo );
   if ( result != ASE_OK ) {
+    drivers.removeCurrentDriver();
     errorStream_ << "RtApiAsio::probeDeviceInfo: error (" << getAsioErrorString( result ) << ") initializing driver (" << info.name << ").";
     errorText_ = errorStream_.str();
     error( RTAUDIO_WARNING );
@@ -3441,6 +3461,7 @@ bool RtApiAsio :: probeDeviceInfo( RtAudio::DeviceInfo &info )
   long inputChannels, outputChannels;
   result = ASIOGetChannels( &inputChannels, &outputChannels );
   if ( result != ASE_OK ) {
+    ASIOExit();
     drivers.removeCurrentDriver();
     errorStream_ << "RtApiAsio::probeDeviceInfo: error (" << getAsioErrorString( result ) << ") getting channel count (" << info.name << ").";
     errorText_ = errorStream_.str();
@@ -3472,6 +3493,7 @@ bool RtApiAsio :: probeDeviceInfo( RtAudio::DeviceInfo &info )
   if ( info.inputChannels <= 0 ) channelInfo.isInput = false;
   result = ASIOGetChannelInfo( &channelInfo );
   if ( result != ASE_OK ) {
+    ASIOExit();
     drivers.removeCurrentDriver();
     errorStream_ << "RtApiAsio::probeDeviceInfo: error (" << getAsioErrorString( result ) << ") getting driver channel info (" << info.name << ").";
     errorText_ = errorStream_.str();
@@ -3491,6 +3513,7 @@ bool RtApiAsio :: probeDeviceInfo( RtAudio::DeviceInfo &info )
   else if ( channelInfo.type == ASIOSTInt24MSB || channelInfo.type == ASIOSTInt24LSB )
     info.nativeFormats |= RTAUDIO_SINT24;
 
+  ASIOExit();
   drivers.removeCurrentDriver();
   return true;
 }
@@ -3530,6 +3553,10 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
   // Only load the driver once for duplex stream.
   ASIOError result;
   if ( !isDuplexInput ) {
+    if ( streamOpen ) {
+      errorText_ = "RtApiAsio::probeDeviceOpen: Another RtAudio ASIO stream is open, cannot open more than one at a time.";
+      return FAILURE;
+    }
     if ( !drivers.loadDriver( const_cast<char *>(driverName.c_str()) ) ) {
       errorStream_ << "RtApiAsio::probeDeviceOpen: unable to load driver (" << driverName << ").";
       errorText_ = errorStream_.str();
@@ -3538,6 +3565,7 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
 
     result = ASIOInit( &driverInfo );
     if ( result != ASE_OK ) {
+      drivers.removeCurrentDriver();
       errorStream_ << "RtApiAsio::probeDeviceOpen: error (" << getAsioErrorString( result ) << ") initializing driver (" << driverName << ").";
       errorText_ = errorStream_.str();
       return FAILURE;
@@ -3847,6 +3875,7 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
   // here.
   if ( stream_.doConvertBuffer[mode] ) setConvertInfo( mode, 0 );
 
+  streamOpen = true;
   return SUCCESS;
 
  error:
@@ -3857,6 +3886,7 @@ bool RtApiAsio :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
     if ( buffersAllocated )
       ASIODisposeBuffers();
 
+    ASIOExit();
     drivers.removeCurrentDriver();
 
     if ( handle ) {
@@ -3895,7 +3925,17 @@ void RtApiAsio :: closeStream()
     stream_.state = STREAM_STOPPED;
     ASIOStop();
   }
+
+  stream_.state = STREAM_CLOSED;
+  CallbackInfo *info = (CallbackInfo *) &stream_.callbackInfo;
+  if ( info->deviceDisconnected ) {
+    // This could be either a disconnect or a sample rate change.
+    errorText_ = "RtApiAsio: the streaming device was disconnected or the sample rate changed, closing stream!";
+    error( RTAUDIO_DEVICE_DISCONNECT );
+  }
+  
   ASIODisposeBuffers();
+  ASIOExit();
   drivers.removeCurrentDriver();
 
   AsioHandle *handle = (AsioHandle *) stream_.apiHandle;
@@ -3918,13 +3958,12 @@ void RtApiAsio :: closeStream()
     free( stream_.deviceBuffer );
     stream_.deviceBuffer = 0;
   }
-
+  
   clearStreamInfo();
+  streamOpen = false;
   //stream_.mode = UNINITIALIZED;
   //stream_.state = STREAM_CLOSED;
 }
-
-bool stopThreadCalled = false;
 
 RtAudioErrorType RtApiAsio :: startStream()
 {
@@ -3957,8 +3996,6 @@ RtAudioErrorType RtApiAsio :: startStream()
   asioXRun = false;
 
  unlock:
-  stopThreadCalled = false;
-
   if ( result == ASE_OK ) return RTAUDIO_NO_ERROR;
   return error( RTAUDIO_SYSTEM_ERROR );
 }
@@ -4013,17 +4050,23 @@ RtAudioErrorType RtApiAsio :: abortStream()
   return RTAUDIO_NO_ERROR;
 }
 
-// This function will be called by a spawned thread when the user
+// This function will be called by a spawned thread when: 1. The user
 // callback function signals that the stream should be stopped or
-// aborted.  It is necessary to handle it this way because the
-// callbackEvent() function must return before the ASIOStop()
-// function will return.
+// aborted; or 2. When a signal is received indicating that the device
+// sample rate has changed or it has been disconnected.  It is
+// necessary to handle it this way because the callbackEvent() or
+// signaling function must return before the ASIOStop() function will
+// return (or the driver can be removed).
 static unsigned __stdcall asioStopStream( void *ptr )
 {
   CallbackInfo *info = (CallbackInfo *) ptr;
   RtApiAsio *object = (RtApiAsio *) info->object;
 
-  object->stopStream();
+  if ( info->deviceDisconnected == false )
+    object->stopStream(); // drain the stream
+  else
+    object->closeStream(); // disconnect or sample rate change ... close the stream
+
   _endthreadex( 0 );
   return 0;
 }
@@ -4191,18 +4234,18 @@ static void sampleRateChanged( ASIOSampleRate sRate )
   // audio device.
 
   RtApi *object = (RtApi *) asioCallbackInfo->object;
-  if ( object->stopStream() ) {
-    std::cerr << "\nRtApiAsio: sampleRateChanged() error (" << /*TODO object->errorText_ <<*/ ")!\n" << std::endl;
-    return;
+  if ( object->getStreamSampleRate() != sRate ) {
+    asioCallbackInfo->deviceDisconnected = true; // flag for either rate change or disconnect
+    unsigned threadId;
+    asioCallbackInfo->thread = _beginthreadex( NULL, 0, &asioStopStream,
+                                               asioCallbackInfo, 0, &threadId );
   }
-
-  std::cerr << "\nRtApiAsio: driver reports sample rate changed to " << sRate << " ... stream stopped!!!\n" << std::endl;
 }
 
 static long asioMessages( long selector, long value, void* /*message*/, double* /*opt*/ )
 {
   long ret = 0;
-
+  
   switch( selector ) {
   case kAsioSelectorSupported:
     if ( value == kAsioResetRequest
@@ -4217,13 +4260,19 @@ static long asioMessages( long selector, long value, void* /*message*/, double* 
       ret = 1L;
     break;
   case kAsioResetRequest:
-    // Defer the task and perform the reset of the driver during the
-    // next "safe" situation.  You cannot reset the driver right now,
-    // as this code is called from the driver.  Reset the driver is
-    // done by completely destruct is. I.e. ASIOStop(),
-    // ASIODisposeBuffers(), Destruction Afterwards you initialize the
-    // driver again.
-    std::cerr << "\nRtApiAsio: driver reset requested!!!" << std::endl;
+    // This message is received when a device is disconnected (and
+    // perhaps when the sample rate changes). It indicates that the
+    // driver should be reset, which is accomplished by calling
+    // ASIOStop(), ASIODisposeBuffers() and removing the driver. But
+    // since this message comes from the driver, we need to let this
+    // function return before attempting to close the stream and
+    // remove the driver. Thus, we invoke a thread to initiate the
+    // stream closing.
+    asioCallbackInfo->deviceDisconnected = true; // flag for either rate change or disconnect
+    unsigned threadId;
+    asioCallbackInfo->thread = _beginthreadex( NULL, 0, &asioStopStream,
+                                               asioCallbackInfo, 0, &threadId );
+    //std::cerr << "\nRtApiAsio: driver reset requested!!!" << std::endl;
     ret = 1L;
     break;
   case kAsioResyncRequest:
@@ -4353,6 +4402,7 @@ MIDL_INTERFACE( "00000000-0000-0000-0000-000000000000" ) IAudioClient3
 {
   virtual HRESULT GetSharedModeEnginePeriod( WAVEFORMATEX*, UINT32*, UINT32*, UINT32*, UINT32* ) = 0;
   virtual HRESULT InitializeSharedAudioStream( DWORD, UINT32, WAVEFORMATEX*, LPCGUID ) = 0;
+  virtual HRESULT Release() = 0;
 };
 #ifdef __CRT_UUID_DECL
 __CRT_UUID_DECL( IAudioClient3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 )
@@ -5206,11 +5256,11 @@ void RtApiWasapi::closeStream( void )
   }
 
   // clean up stream memory
+  SAFE_RELEASE(((WasapiHandle*)stream_.apiHandle)->captureClient)
+  SAFE_RELEASE(((WasapiHandle*)stream_.apiHandle)->renderClient)
+
   SAFE_RELEASE( ( ( WasapiHandle* ) stream_.apiHandle )->captureAudioClient )
   SAFE_RELEASE( ( ( WasapiHandle* ) stream_.apiHandle )->renderAudioClient )
-
-  SAFE_RELEASE( ( ( WasapiHandle* ) stream_.apiHandle )->captureClient )
-  SAFE_RELEASE( ( ( WasapiHandle* ) stream_.apiHandle )->renderClient )
 
   if ( ( ( WasapiHandle* ) stream_.apiHandle )->captureEvent )
     CloseHandle( ( ( WasapiHandle* ) stream_.apiHandle )->captureEvent );
@@ -5663,6 +5713,7 @@ void RtApiWasapi::wasapiThread()
                                                                MinPeriodInFrames,
                                                                captureFormat,
                                                                NULL );
+        SAFE_RELEASE(captureAudioClient3);
       }
       else
       {
@@ -5774,6 +5825,7 @@ void RtApiWasapi::wasapiThread()
                                                               MinPeriodInFrames,
                                                               renderFormat,
                                                               NULL );
+        SAFE_RELEASE(renderAudioClient3);
       }
       else
       {
@@ -7846,25 +7898,23 @@ void RtApiAlsa :: probeDevices( void )
   snd_pcm_info_t *pcminfo;
   snd_ctl_card_info_alloca(&ctlinfo);
   snd_pcm_info_alloca(&pcminfo);
-  std::vector<std::string> deviceIds;
-  std::vector<std::string> deviceNames;
+  // First element isthe device hw ID, second is the device "pretty name"
+  std::vector<std::pair<std::string, std::string>> deviceID_prettyName;
   snd_pcm_stream_t stream;
   std::string defaultDeviceName;
 
   // Add the default interface if available.
   result = snd_ctl_open( &handle, "default", 0 );
   if (result == 0) {
-    deviceIds.push_back( "default" );
-    deviceNames.push_back( "Default ALSA Device" );
-    defaultDeviceName = deviceNames[0];
+    deviceID_prettyName.push_back({"default", "Default ALSA Device"});
+    defaultDeviceName = deviceID_prettyName[0].second;
     snd_ctl_close( handle );
   }
 
   // Add the Pulse interface if available.
   result = snd_ctl_open( &handle, "pulse", 0 );
   if (result == 0) {
-    deviceIds.push_back( "pulse" );
-    deviceNames.push_back( "PulseAudio Sound Server" );
+    deviceID_prettyName.push_back({"pulse",  "PulseAudio Sound Server"});
     snd_ctl_close( handle );
   }
   
@@ -7920,9 +7970,10 @@ void RtApiAlsa :: probeDevices( void )
         else continue;
       }
       sprintf( name, "hw:%s,%d", snd_ctl_card_info_get_id(ctlinfo), device );
-      deviceIds.push_back( name );
+      std::string id(name);
       sprintf( name, "%s (%s)", snd_ctl_card_info_get_name(ctlinfo), snd_pcm_info_get_id(pcminfo) );
-      deviceNames.push_back( name );
+      std::string prettyName(name);
+      deviceID_prettyName.push_back( {id, prettyName} );
       if ( card == 0 && device == 0 && defaultDeviceName.empty() )
         defaultDeviceName = name;
     }
@@ -7932,47 +7983,73 @@ void RtApiAlsa :: probeDevices( void )
     snd_card_next( &card );
   }
 
-  if ( deviceIds.size() == 0 ) {
+  if ( deviceID_prettyName.size() == 0 ) {
     deviceList_.clear();
-    deviceIds_.clear();
+    deviceIdPairs_.clear();
     return;
   }
 
-  // Fill or update the deviceList_ and also save a corresponding list of Ids.
-  unsigned int m, n;
-  for ( n=0; n<deviceNames.size(); n++ ) {
-    for ( m=0; m<deviceList_.size(); m++ ) {
-      if ( deviceList_[m].name == deviceNames[n] )
-        break; // We already have this device.
-    }
-    if ( m == deviceList_.size() ) { // new device
-      RtAudio::DeviceInfo info;
-      info.name = deviceNames[n];
-      if ( probeDeviceInfo( info, deviceIds[n] ) == false ) continue; // ignore if probe fails
-      info.ID = currentDeviceId_++;  // arbitrary internal device ID
-      if ( info.name == defaultDeviceName ) {
-        if ( info.outputChannels > 0 ) info.isDefaultOutput = true;
-        if ( info.inputChannels > 0 ) info.isDefaultInput = true;
-      }
-      deviceList_.push_back( info );
-      deviceIds_.push_back( deviceIds[n] );
-      // I don't see that ALSA provides property listeners to know if
-      // devices are removed or added.
-    }
-  }
-
-  // Remove any devices left in the list that are no longer available.
-  for ( std::vector<RtAudio::DeviceInfo>::iterator it=deviceList_.begin(); it!=deviceList_.end(); ) {
-    for ( m=0; m<deviceNames.size(); m++ ) {
-      if ( (*it).name == deviceNames[m] ) {
-        ++it;
+  // Clean removed devices
+  for ( auto it = deviceIdPairs_.begin(); it != deviceIdPairs_.end(); ) {
+    bool found = false;
+    for ( auto& d: deviceID_prettyName ) {
+      if ( d.first == (*it).first ) {
+        found = true;
         break;
       }
     }
-    if ( m == deviceNames.size() ) { // not found so remove it from our list
-      it = deviceList_.erase( it );
-      deviceIds_.erase( deviceIds_.begin() + distance(deviceList_.begin(), it ) );
+
+    if ( found )
+      ++it;
+    else
+      it = deviceIdPairs_.erase(it);
+  }
+
+  // Fill or update the deviceList_ and also save a corresponding list of Ids.
+  for ( auto& d : deviceID_prettyName ) {
+    bool found = false;
+    for ( auto& dID : deviceIdPairs_ ) {
+      if ( d.first == dID.first ) {
+        found = true;
+        break; // We already have this device.
+      }
     }
+
+    if ( found )
+      continue;
+
+    // new device
+    RtAudio::DeviceInfo info;
+    info.name = d.second;
+    if ( probeDeviceInfo( info, d.first ) == false ) continue; // ignore if probe fails
+    info.ID = currentDeviceId_++;  // arbitrary internal device ID
+    if ( info.name == defaultDeviceName ) {
+      if ( info.outputChannels > 0 ) info.isDefaultOutput = true;
+      if ( info.inputChannels > 0 ) info.isDefaultInput = true;
+    }
+    deviceList_.push_back( info );
+    deviceIdPairs_.push_back({d.first, info.ID});
+    // I don't see that ALSA provides property listeners to know if
+    // devices are removed or added.
+  }
+
+  // Remove any devices left in the list that are no longer available.
+  for ( std::vector<RtAudio::DeviceInfo>::iterator it=deviceList_.begin(); it!=deviceList_.end(); )
+  {
+    auto itID = deviceIdPairs_.begin();
+    while ( itID != deviceIdPairs_.end() ) {
+      if ( (*it).ID == (*itID).second ) {
+        break;
+      }
+      ++itID;
+    }
+
+    if ( itID == deviceIdPairs_.end() ) {
+      // not found so remove it from our list
+      it = deviceList_.erase( it );
+    }
+    else
+      ++it;
   }
 }
 
@@ -8160,9 +8237,9 @@ bool RtApiAlsa :: probeDeviceOpen( unsigned int deviceId, StreamMode mode, unsig
 #endif
 
   std::string name;
-  for ( unsigned int m=0; m<deviceList_.size(); m++ ) {
-    if ( deviceList_[m].ID == deviceId ) {
-      name = deviceIds_[m];
+  for ( auto& id : deviceIdPairs_) {
+    if ( id.second == deviceId ) {
+      name = id.first;
       break;
     }
   }
@@ -11143,7 +11220,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
           // Use llround() which returns `long long` which is guaranteed to be at least 64 bits.
-          out[info.outOffset[j]] = (Int32) std::min(std::llround(in[info.inOffset[j]] * 2147483648.f), 2147483647LL);
+          out[info.outOffset[j]] = (Int32) std::max(std::min(std::llround(in[info.inOffset[j]] * 2147483648.f), 2147483647LL), -2147483648LL);
         }
         in += info.inJump;
         out += info.outJump;
@@ -11153,7 +11230,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float64 *in = (Float64 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Int32) std::min(std::llround(in[info.inOffset[j]] * 2147483648.0), 2147483647LL);
+          out[info.outOffset[j]] = (Int32) std::max(std::min(std::llround(in[info.inOffset[j]] * 2147483648.0), 2147483647LL), -2147483648LL);
         }
         in += info.inJump;
         out += info.outJump;
@@ -11210,7 +11287,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float32 *in = (Float32 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Int32) std::min(std::llround(in[info.inOffset[j]] * 8388608.f), 8388607LL);
+          out[info.outOffset[j]] = (Int32) std::max(std::min(std::llround(in[info.inOffset[j]] * 8388608.f), 8388607LL), -8388608LL);
         }
         in += info.inJump;
         out += info.outJump;
@@ -11220,7 +11297,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float64 *in = (Float64 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Int32) std::min(std::llround(in[info.inOffset[j]] * 8388608.0), 8388607LL);
+          out[info.outOffset[j]] = (Int32) std::max(std::min(std::llround(in[info.inOffset[j]] * 8388608.0), 8388607LL), -8388608LL);
         }
         in += info.inJump;
         out += info.outJump;
@@ -11275,7 +11352,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float32 *in = (Float32 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Int16) std::min(std::llround(in[info.inOffset[j]] * 32768.f), 32767LL);
+          out[info.outOffset[j]] = (Int16) std::max(std::min(std::llround(in[info.inOffset[j]] * 32768.f), 32767LL), -32768LL);
         }
         in += info.inJump;
         out += info.outJump;
@@ -11285,7 +11362,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float64 *in = (Float64 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (Int16) std::min(std::llround(in[info.inOffset[j]] * 32768.0), 32767LL);
+          out[info.outOffset[j]] = (Int16) std::max(std::min(std::llround(in[info.inOffset[j]] * 32768.0), 32767LL), -32768LL);
         }
         in += info.inJump;
         out += info.outJump;
@@ -11339,7 +11416,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float32 *in = (Float32 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (signed char) std::min(std::llround(in[info.inOffset[j]] * 128.f), 127LL);
+          out[info.outOffset[j]] = (signed char) std::max(std::min(std::llround(in[info.inOffset[j]] * 128.f), 127LL), -128LL);
         }
         in += info.inJump;
         out += info.outJump;
@@ -11349,7 +11426,7 @@ void RtApi :: convertBuffer( char *outBuffer, char *inBuffer, ConvertInfo &info 
       Float64 *in = (Float64 *)inBuffer;
       for (unsigned int i=0; i<stream_.bufferSize; i++) {
         for (j=0; j<info.channels; j++) {
-          out[info.outOffset[j]] = (signed char) std::min(std::llround(in[info.inOffset[j]] * 128.0), 127LL);
+          out[info.outOffset[j]] = (signed char) std::max(std::min(std::llround(in[info.inOffset[j]] * 128.0), 127LL), -128LL);
         }
         in += info.inJump;
         out += info.outJump;
