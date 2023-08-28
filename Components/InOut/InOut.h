@@ -61,8 +61,8 @@ protected:
 private:
     std::mutex _mutex;
 
-    std::vector<std::queue<std::shared_ptr<Signal>>> _inputValues;
-    std::vector<std::queue<std::shared_ptr<Signal>>> _outputValues;
+    std::vector<std::queue<std::shared_ptr<fast_any::any>>> _inputValues;
+    std::vector<std::queue<std::shared_ptr<fast_any::any>>> _outputValues;
 
     std::unique_ptr<internal::InOut> p;
 };
@@ -74,8 +74,8 @@ bool InOut::PushOutput( int index, ValueType const& value )
 
     if ( (size_t)index < _outputValues.size() )
     {
-        auto signal = std::make_shared<Signal>();
-        signal->SetValue( value );
+        auto signal = std::make_shared<fast_any::any>();
+        signal->emplace( value );
         _outputValues[index].push( signal );
 
         return true;
@@ -94,7 +94,7 @@ std::unique_ptr<ValueType> InOut::PopInput( int index )
         auto signal = _inputValues[index].front();
         _inputValues[index].pop();
 
-        auto value = signal->GetValue<ValueType>();
+        auto value = signal->as<ValueType>();
         if ( value )
         {
             return std::unique_ptr<ValueType>( new ValueType( *value ) );
