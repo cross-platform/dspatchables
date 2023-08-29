@@ -14,8 +14,8 @@ cd dspatchables
 git submodule update --init --recursive --remote
 mkdir build
 cd build
-cmake ..
-make
+cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake --build . --config Release
 ```
 
 - *`cmake ..` will auto-detect your IDE / compiler. To manually select one, use `cmake -G`.*
