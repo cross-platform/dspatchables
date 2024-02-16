@@ -32,9 +32,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <fft_kiss.h>
 
 #include <math.h>
+#include <mutex>
 
 using namespace DSPatch;
 using namespace DSPatchables;
+
+static std::mutex kissfftMutex;
 
 VoxRemover::VoxRemover()
 {
@@ -148,6 +151,7 @@ void VoxRemover::_ApplyHanningWindows()
 
 void VoxRemover::_FftSignalBuffers()
 {
+    std::lock_guard<std::mutex> lock( kissfftMutex );
     fft_kiss( &_sigBufL[0], &_specBufL[0], _sigBufL.size() );
     fft_kiss( &_sigBufR[0], &_specBufR[0], _sigBufR.size() );
 }
@@ -195,6 +199,7 @@ void VoxRemover::_ProcessSpectralBuffers()
 
 void VoxRemover::_IfftSpectralBuffers()
 {
+    std::lock_guard<std::mutex> lock( kissfftMutex );
     ifft_kiss( &_specBufL[0], &_sigBufL[0], _sigBufL.size() );
     ifft_kiss( &_specBufR[0], &_sigBufR[0], _sigBufR.size() );
 }
