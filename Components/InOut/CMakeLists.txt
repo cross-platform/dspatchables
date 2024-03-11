@@ -9,9 +9,4 @@ add_library(
     ${srcs}
 )
 
-target_link_libraries(
-    ${PROJECT_NAME}
-    DSPatch
-)
-
 install(TARGETS ${PROJECT_NAME} DESTINATION lib/dspatch/components)

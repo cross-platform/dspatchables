@@ -20,7 +20,6 @@ add_dependencies(
 
 target_link_libraries(
     ${PROJECT_NAME}
-    DSPatch
     ${WEBRTC_LIB}
 )
 

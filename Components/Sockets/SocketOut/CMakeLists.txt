@@ -15,11 +15,6 @@ add_library(
     ${srcs}
 )
 
-target_link_libraries(
-    ${PROJECT_NAME}
-    DSPatch
-)
-
 if(WIN32)
     target_link_libraries(
         ${PROJECT_NAME}

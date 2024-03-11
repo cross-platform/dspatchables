@@ -13,11 +13,6 @@ add_library(
     ${srcs}
 )
 
-target_link_libraries(
-    ${PROJECT_NAME}
-    DSPatch
-)
-
 # Definition for RtAudio Windows, using WASAPI
 if(WIN32)
     add_definitions(-D__WINDOWS_WASAPI__)
