@@ -1,17 +1,17 @@
-add_library(
-    Adder SHARED
-    Adder.cpp
-)
+#add_library(
+#    Adder SHARED
+#    Adder.cpp
+#)
 
-add_library(
-    AudioIn SHARED
-    AudioIn.cpp
-)
+#add_library(
+#    AudioIn SHARED
+#    AudioIn.cpp
+#)
 
-add_library(
-    AudioOut SHARED
-    AudioOut.cpp
-)
+#add_library(
+#    AudioOut SHARED
+#    AudioOut.cpp
+#)
 
 add_library(
     AudioTrack SHARED

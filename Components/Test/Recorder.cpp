@@ -13,7 +13,6 @@ public:
 
     virtual void Process_( SignalBus&, SignalBus& ) override
     {
-        std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
     }
 };
 
