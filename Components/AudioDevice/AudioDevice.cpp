@@ -66,11 +66,9 @@ public:
 
     static void SanitizeDeviceName( std::string& name )
     {
-        std::replace_if(
-            name.begin(), name.end(), []( char c ) { return c == static_cast<char>( '\xd5' ); }, '\'' );
+        std::replace_if( name.begin(), name.end(), []( char c ) { return c == static_cast<char>( '\xd5' ); }, '\'' );
 
-        std::replace_if(
-            name.begin(), name.end(), []( char c ) { return !std::isprint( static_cast<unsigned char>( c ) ); }, '_' );
+        std::replace_if( name.begin(), name.end(), []( char c ) { return !std::isprint( static_cast<unsigned char>( c ) ); }, '_' );
     }
 
     std::vector<std::vector<short>> outputChannels;
@@ -268,7 +266,7 @@ bool AudioDevice::SetDevice( unsigned int deviceId, bool loopback )
         p->outputParams.deviceId = deviceId;
 
         p->outputChannels.resize( p->outputParams.nChannels );
-        SetInputCount_( p->outputParams.nChannels );
+        SetInputCount_( p->outputParams.nChannels, { "leftIn", "rightIn" } );
 
         // configure inputParams
         if ( loopback )
