@@ -178,7 +178,7 @@ public:
 WaveReader::WaveReader( std::string const& fileName )
     : p( new internal::WaveReader( fileName ) )
 {
-    SetOutputCount_( p->waveFormat.channelCount );
+    SetOutputCount_( p->waveFormat.channelCount, { "leftOut", "rightOut" } );
 }
 
 void WaveReader::Process_( SignalBus&, SignalBus& outputs )

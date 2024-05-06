@@ -41,8 +41,8 @@ static std::mutex kissfftMutex;
 
 VoxRemover::VoxRemover()
 {
-    SetInputCount_( 3, { "ch1", "ch2", "Δphi (/10)" } );
-    SetOutputCount_( 2 );
+    SetInputCount_( 3, { "leftIn", "rightIn", "Δphi (/10)" } );
+    SetOutputCount_( 2, { "leftOut", "rightOut" } );
 
     _BuildHanningLookup();
 }
