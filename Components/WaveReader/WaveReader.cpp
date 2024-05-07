@@ -178,6 +178,7 @@ public:
 WaveReader::WaveReader( std::string const& fileName )
     : p( new internal::WaveReader( fileName ) )
 {
+    SetInputCount_( 1, { "clockIn" } );
     SetOutputCount_( p->waveFormat.channelCount, { "leftOut", "rightOut" } );
 }
 

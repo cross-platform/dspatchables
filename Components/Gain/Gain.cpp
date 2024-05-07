@@ -55,8 +55,8 @@ public:
 Gain::Gain()
     : p( new internal::Gain() )
 {
-    SetInputCount_( 2, { "in", "gain" } );
-    SetOutputCount_( 1, { "out" } );
+    SetInputCount_( 4, { "leftIn", "rightIn", "volume", "clockIn" } );
+    SetOutputCount_( 2, { "leftOut", "rightOut" } );
 }
 
 Gain::~Gain() = default;
@@ -84,12 +84,9 @@ bool Gain::GetMute() const
 void Gain::Process_( SignalBus& inputs, SignalBus& outputs )
 {
     auto in = inputs.GetValue<std::vector<short>>( 0 );
-    if ( !in )
-    {
-        return;
-    }
+    auto in2 = inputs.GetValue<std::vector<short>>( 1 );
 
-    auto gain = inputs.GetValue<float>( 1 );
+    auto gain = inputs.GetValue<float>( 2 );
     if ( gain )
     {
         p->gain = *gain;
@@ -98,12 +95,27 @@ void Gain::Process_( SignalBus& inputs, SignalBus& outputs )
     // apply gain sample-by-sample
     if ( p->muted )
     {
-        std::for_each( ( *in ).begin(), ( *in ).end(), []( short& sample ) { sample = 0.0f; } );
+        if ( in )
+        {
+            std::for_each( ( *in ).begin(), ( *in ).end(), []( short& sample ) { sample = 0.0f; } );
+        }
+        if ( in2 )
+        {
+            std::for_each( ( *in2 ).begin(), ( *in2 ).end(), []( short& sample ) { sample = 0.0f; } );
+        }
     }
     else
     {
-        std::for_each( ( *in ).begin(), ( *in ).end(), [this]( short& sample ) { sample *= p->gain; } );
+        if ( in )
+        {
+            std::for_each( ( *in ).begin(), ( *in ).end(), [this]( short& sample ) { sample *= p->gain; } );
+        }
+        if ( in2 )
+        {
+            std::for_each( ( *in2 ).begin(), ( *in2 ).end(), [this]( short& sample ) { sample *= p->gain; } );
+        }
     }
 
     outputs.MoveSignal( 0, *inputs.GetSignal( 0 ) );  // move gained input signal to output
+    outputs.MoveSignal( 1, *inputs.GetSignal( 1 ) );  // move gained input signal to output
 }

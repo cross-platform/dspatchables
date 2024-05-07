@@ -1,4 +1,4 @@
-project(WaveReader)
+project(AudioTrack)
 
 add_definitions(-DSAMPLE_WAV_FILE="${CMAKE_CURRENT_SOURCE_DIR}/Sample.wav")
 

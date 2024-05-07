@@ -12,8 +12,10 @@ public:
         SetOutputCount_( 2, { "leftOut", "rightOut" } );
     }
 
-    virtual void Process_( SignalBus&, SignalBus& ) override
+    virtual void Process_( SignalBus& inputs, SignalBus& outputs ) override
     {
+        outputs.MoveSignal( 0, *inputs.GetSignal( 0 ) );
+        outputs.MoveSignal( 1, *inputs.GetSignal( 1 ) );
     }
 };
 

@@ -73,7 +73,7 @@ public:
 WaveWriter::WaveWriter( std::string const& fileName, int channelCount, int bitsPerSample, int sampleRate )
     : p( new internal::WaveWriter( fileName, channelCount ) )
 {
-    SetInputCount_( channelCount );
+    SetInputCount_( channelCount, { "leftIn", "rightIn" } );
 
     // Write the file headers
     p->file << "RIFF----WAVEfmt ";                                                // (chunk size to be filled in later)
