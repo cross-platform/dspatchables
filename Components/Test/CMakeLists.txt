@@ -4,18 +4,8 @@ add_library(
 )
 
 add_library(
-    Instrument SHARED
-    Instrument.cpp
-)
-
-add_library(
     Metronome SHARED
     Metronome.cpp
-)
-
-add_library(
-    MidiIn SHARED
-    MidiIn.cpp
 )
 
 add_library(

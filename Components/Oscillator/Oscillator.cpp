@@ -75,8 +75,8 @@ public:
 Oscillator::Oscillator( float startFreq, float startAmpl )
     : p( new internal::Oscillator( startFreq, startAmpl ) )
 {
-    SetInputCount_( 1, { "freq (x1000)" } );
-    SetOutputCount_( 1, { "out" } );
+    SetInputCount_( 2, { "midiIn", "clockIn" } );
+    SetOutputCount_( 2, { "leftOut", "rightOut" } );
 }
 
 void Oscillator::SetBufferSize( int bufferSize )
@@ -153,6 +153,7 @@ void Oscillator::Process_( SignalBus& inputs, SignalBus& outputs )
         }
 
         outputs.SetValue( 0, p->signal );
+        outputs.SetValue( 1, p->signal );
     }
 }
 

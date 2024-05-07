@@ -54,7 +54,7 @@ private:
     std::unique_ptr<internal::WaveWriter> p;
 };
 
-EXPORT_PLUGIN( WaveWriter, "WaveWriter.wav", c_channelCount, c_bitsPerSample, c_sampleRate )
+EXPORT_PLUGIN( WaveWriter, "Recording.wav", c_channelCount, c_bitsPerSample, c_sampleRate )
 
 }  // namespace DSPatchables
 }  // namespace DSPatch
