@@ -1,9 +1,4 @@
 add_library(
-    Effect SHARED
-    Effect.cpp
-)
-
-add_library(
     Metronome SHARED
     Metronome.cpp
 )
