@@ -582,6 +582,7 @@ int DSPatchables::internal::AudioDevice::DynamicCallback( void* inputBuffer, voi
                 if ( !outputChannel.empty() )
                 {
                     memcpy( shortOutput, &outputChannel[0], outputChannel.size() * sizeof( short ) );
+                    outputChannel.assign( outputChannel.size(), 0 );
                     shortOutput += outputChannel.size();
                 }
             }
